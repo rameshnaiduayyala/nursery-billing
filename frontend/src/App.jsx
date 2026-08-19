@@ -18,6 +18,7 @@ import RemindersPage from './pages/RemindersPage';
 import UsersPage from './pages/users/UsersPage';
 import ProfitLossPage from './pages/ProfitLossPage';
 import ReportsPage from './pages/reports/ReportsPage';
+import BackupRestorePage from './pages/settings/BackupRestorePage';
 import { Spinner } from 'react-bootstrap';
 
 function ProtectedRoute({ children }) {
@@ -155,6 +156,15 @@ function App() {
               element={
                 <AdminRoute>
                   <UsersPage />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="/settings/backup"
+              element={
+                <AdminRoute>
+                  <BackupRestorePage />
                 </AdminRoute>
               }
             />

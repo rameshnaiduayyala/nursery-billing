@@ -22,12 +22,13 @@ export function SidebarContent({ collapsed, onToggleCollapse, onLinkClick }) {
   const location = useLocation();
   const { isAdmin } = useAuth();
 
-  // Dynamically include Users Management if user is ADMIN
+  // Dynamically include Users Management and Backup & Restore if user is ADMIN
   const navItems = isAdmin
     ? [
         ...baseNavItems.slice(0, 8),
         { label: 'User Management', path: '/users', icon: 'bi-person-gear' },
         ...baseNavItems.slice(8),
+        { label: 'Backup & Restore', path: '/settings/backup', icon: 'bi-database-fill-gear' },
       ]
     : baseNavItems;
 

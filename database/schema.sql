@@ -97,9 +97,52 @@ INSERT IGNORE INTO settings (setting_key, setting_value) VALUES
 ('currency_symbol', '₹'),
 ('business_name', 'Green Harvest Nursery'),
 ('business_phone', '+91 9876543210'),
-('business_address', 'Main Road, Nursery Cluster, Anaparthi, AP');
+('business_address', 'Main Road, Nursery Cluster, Anaparthi, AP'),
+('backup_auto_enabled', '1'),
+('backup_frequency', 'daily'),
+('backup_time', '02:00'),
+('backup_retention_count', '30');
 
 -- Seed default admin user (Email: admin@nursery.com | Password: admin123)
 -- Note: The API login endpoint automatically validates and syncs the admin password on first login.
 INSERT IGNORE INTO users (id, name, email, password_hash, role, status) VALUES
 (1, 'Admin Manager', 'admin@nursery.com', '$2y$10$wT1D.kZzK5m9F.Jz3XpLeOQyX7vGz0z.J1hF/qL1V2b3c4d5e6f7', 'admin', 1);
+
+CREATE TABLE IF NOT EXISTS backup_logs (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NULL,
+  backup_type VARCHAR(30) NOT NULL DEFAULT 'MANUAL',
+  filename VARCHAR(255) NOT NULL,
+  file_path TEXT NOT NULL,
+  file_size BIGINT UNSIGNED DEFAULT 0,
+  status VARCHAR(30) NOT NULL DEFAULT 'SUCCESS',
+  error_message TEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_created (created_at),
+  INDEX idx_status (status)
+);
+
+CREATE TABLE IF NOT EXISTS restore_logs (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NULL,
+  backup_filename VARCHAR(255) NOT NULL,
+  pre_restore_backup VARCHAR(255) NULL,
+  started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  completed_at TIMESTAMP NULL,
+  status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+  error_message TEXT NULL,
+  INDEX idx_started (started_at)
+);
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NULL,
+  user_email VARCHAR(190) NULL,
+  action VARCHAR(100) NOT NULL,
+  details TEXT NULL,
+  ip_address VARCHAR(45) NULL,
+  status VARCHAR(30) NOT NULL DEFAULT 'SUCCESS',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_audit_created (created_at),
+  INDEX idx_audit_action (action)
+);

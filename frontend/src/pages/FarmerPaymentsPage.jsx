@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Table, Button, Form, Modal, Row, Col, Badge, Spinner, InputGroup } from 'react-bootstrap';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import farmerService from '../services/farmerService';
 import transactionService from '../services/transactionService';
@@ -13,6 +14,8 @@ import { formatCurrency, formatDate, dateToInput } from '../utils/formatters';
 export default function FarmerPaymentsPage() {
   const { showToast } = useToast();
   const { canCreate, canEdit, canDelete } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [transactions, setTransactions] = useState([]);
   const [farmers, setFarmers] = useState([]);
@@ -72,6 +75,14 @@ export default function FarmerPaymentsPage() {
   useEffect(() => {
     fetchData();
   }, [search, startDate, endDate]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('action') === 'add') {
+      handleOpenAddModal();
+      navigate('/farmer-payments', { replace: true });
+    }
+  }, [location.search]);
 
   const handleOpenAddModal = () => {
     setSelectedTx(null);

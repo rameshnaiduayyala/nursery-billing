@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Dropdown, Modal, Form, Badge } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import authService from '../../services/authService';
 import logoImg from '../../assets/Gangadhara_logo.png';
 
 export default function TopNavbar({ collapsed, onToggleCollapse, onToggleMobileMenu }) {
-  const { user, logout, role, isAdmin, isViewer } = useAuth();
+  const { user, logout, role, isAdmin, isViewer, canCreate } = useAuth();
   const { showToast } = useToast();
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -38,9 +39,9 @@ export default function TopNavbar({ collapsed, onToggleCollapse, onToggleMobileM
   };
 
   const roleMeta = {
-    ADMIN:   { cls: 'badge-danger',   label: 'Admin',   icon: 'bi-shield-lock-fill' },
-    MANAGER: { cls: 'badge-primary',  label: 'Manager', icon: 'bi-person-badge-fill' },
-    VIEWER:  { cls: 'badge-warning',  label: 'Viewer',  icon: 'bi-eye-fill' },
+    ADMIN: { cls: 'badge-danger', label: 'Admin', icon: 'bi-shield-lock-fill' },
+    MANAGER: { cls: 'badge-primary', label: 'Manager', icon: 'bi-person-badge-fill' },
+    VIEWER: { cls: 'badge-warning', label: 'Viewer', icon: 'bi-eye-fill' },
   };
   const rm = roleMeta[role] ?? { cls: 'badge-gray', label: role, icon: 'bi-person-fill' };
 
@@ -95,11 +96,19 @@ export default function TopNavbar({ collapsed, onToggleCollapse, onToggleMobileM
 
         {/* Right side */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* Role badge */}
-          <span className={`badge-pill ${rm.cls} d-none d-md-inline-flex`}>
-            <i className={`bi ${rm.icon}`} />
-            {rm.label}
-          </span>
+          {/* Quick Add buttons */}
+          {canCreate && (
+            <div className="d-none d-sm-flex align-items-center gap-2 me-1">
+              <Link to="/sales?action=add" className="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
+                <i className="bi bi-cart-plus-fill" />
+                <span>+ Sale</span>
+              </Link>
+              <Link to="/farmer-payments?action=add" className="btn btn-sm btn-warning fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
+                <i className="bi bi-flower2" />
+                <span>+ Purchase</span>
+              </Link>
+            </div>
+          )}
 
           {/* User dropdown */}
           {user && (
@@ -173,7 +182,7 @@ export default function TopNavbar({ collapsed, onToggleCollapse, onToggleMobileM
           <Modal.Body>
             {[
               { label: 'Current Password', key: 'current_password' },
-              { label: 'New Password',     key: 'new_password', min: 6 },
+              { label: 'New Password', key: 'new_password', min: 6 },
               { label: 'Confirm Password', key: 'confirm_password', min: 6 },
             ].map(({ label, key, min }) => (
               <Form.Group key={key} className="mb-3">

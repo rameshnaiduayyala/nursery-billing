@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Form, Button, Container, Spinner, Badge } from 'react-bootstrap';
+import { Card, Form, Button, Container, Spinner } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +11,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -70,13 +71,22 @@ export default function Login() {
                 <div className="input-group">
                   <span className="input-group-text bg-light border-end-0"><i className="bi bi-lock text-muted"></i></span>
                   <Form.Control
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
-                    className="border-start-0 ps-0"
+                    className="border-start-0 border-end-0 ps-0"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
+                  <Button
+                    variant="light"
+                    className="border border-start-0 text-secondary px-3"
+                    onClick={() => setShowPassword(!showPassword)}
+                    type="button"
+                    title={showPassword ? 'Hide Password' : 'Show Password'}
+                  >
+                    <i className={`bi ${showPassword ? 'bi-eye-slash-fill' : 'bi-eye-fill'}`}></i>
+                  </Button>
                 </div>
               </Form.Group>
 

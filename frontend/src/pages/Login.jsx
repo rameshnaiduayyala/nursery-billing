@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Form, Button, Container, Spinner } from 'react-bootstrap';
+import { Card, Form, Button, Container, Spinner, Badge } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
@@ -26,6 +26,11 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFillSeed = (seedEmail, seedPass) => {
+    setEmail(seedEmail);
+    setPassword(seedPass);
   };
 
   return (
@@ -86,8 +91,19 @@ export default function Login() {
               </Button>
             </Form>
 
-            <div className="mt-4 pt-3 border-top text-center text-muted small">
-              Admin Seed Login: <strong>admin@nursery.com</strong> / <strong>admin123</strong>
+            <div className="mt-4 pt-3 border-top text-center">
+              <small className="text-muted fw-semibold d-block mb-2">Demo Role Accounts (Click to Fill):</small>
+              <div className="d-flex flex-wrap gap-1 justify-content-center">
+                <Button variant="outline-danger" size="sm" onClick={() => handleFillSeed('admin@nursery.com', 'admin123')}>
+                  Admin
+                </Button>
+                <Button variant="outline-primary" size="sm" onClick={() => handleFillSeed('manager@nursery.com', 'manager123')}>
+                  Manager
+                </Button>
+                <Button variant="outline-warning" size="sm" onClick={() => handleFillSeed('viewer@nursery.com', 'viewer123')}>
+                  Viewer (Read-Only)
+                </Button>
+              </div>
             </div>
           </Card.Body>
         </Card>

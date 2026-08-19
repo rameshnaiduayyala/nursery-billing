@@ -19,10 +19,16 @@ $stmt = $pdo->prepare("SELECT id, name, email, password_hash, role, status FROM 
 $stmt->execute([':email' => $email]);
 $user = $stmt->fetch();
 
-// Smart seed fallback: If admin user exists but hash was seeded as a static string, heal it automatically for admin123
-if ($user && $email === 'admin@nursery.com' && $password === 'admin123') {
+// Smart seed fallback for Admin, Manager, Viewer
+$seedAccounts = [
+    'admin@nursery.com' => 'admin123',
+    'manager@nursery.com' => 'manager123',
+    'viewer@nursery.com' => 'viewer123'
+];
+
+if ($user && isset($seedAccounts[$email]) && $password === $seedAccounts[$email]) {
     if (!password_verify($password, $user['password_hash'])) {
-        $newHash = password_hash('admin123', PASSWORD_DEFAULT);
+        $newHash = password_hash($password, PASSWORD_DEFAULT);
         $upStmt = $pdo->prepare("UPDATE users SET password_hash = :hash WHERE id = :id");
         $upStmt->execute([':hash' => $newHash, ':id' => $user['id']]);
         $user['password_hash'] = $newHash;

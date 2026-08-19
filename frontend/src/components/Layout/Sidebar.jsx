@@ -2,9 +2,10 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Sidebar as ProSidebar, Menu, MenuItem } from 'react-pro-sidebar';
 import { Offcanvas, Button } from 'react-bootstrap';
+import { useAuth } from '../../context/AuthContext';
 import logoImg from '../../assets/Gangadhara_logo.png';
 
-const navItems = [
+const baseNavItems = [
   { label: 'Dashboard', path: '/', icon: 'bi-grid-1x2-fill' },
   { label: 'Farmers', path: '/farmers', icon: 'bi-person-lines-fill' },
   { label: 'Farmer Payments', path: '/farmer-payments', icon: 'bi-flower2' },
@@ -19,6 +20,16 @@ const navItems = [
 
 export function SidebarContent({ collapsed, onToggleCollapse, onLinkClick }) {
   const location = useLocation();
+  const { isAdmin } = useAuth();
+
+  // Dynamically include Users Management if user is ADMIN
+  const navItems = isAdmin
+    ? [
+        ...baseNavItems.slice(0, 8),
+        { label: 'User Management', path: '/users', icon: 'bi-person-gear' },
+        ...baseNavItems.slice(8),
+      ]
+    : baseNavItems;
 
   return (
     <div className="d-flex flex-column h-100 bg-dark text-white">

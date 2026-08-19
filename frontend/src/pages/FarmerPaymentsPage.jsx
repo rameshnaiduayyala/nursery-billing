@@ -4,11 +4,13 @@ import farmerService from '../services/farmerService';
 import transactionService from '../services/transactionService';
 import PageHeader from '../components/Common/PageHeader';
 import DeleteConfirmModal from '../components/Common/DeleteConfirmModal';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { formatCurrency, formatDate, dateToInput } from '../utils/formatters';
 
 export default function FarmerPaymentsPage() {
   const { showToast } = useToast();
+  const { canCreate, canEdit, canDelete } = useAuth();
 
   const [transactions, setTransactions] = useState([]);
   const [farmers, setFarmers] = useState([]);
@@ -192,9 +194,11 @@ export default function FarmerPaymentsPage() {
         title="Farmer Payments & Purchases"
         subtitle="Record plant bulk purchases and payments made to farmers"
         actions={
-          <Button variant="success" size="sm" className="fw-bold" onClick={handleOpenAddModal}>
-            <i className="bi bi-plus-lg me-1"></i> + Farmer Payment / Purchase
-          </Button>
+          canCreate && (
+            <Button variant="success" size="sm" className="fw-bold" onClick={handleOpenAddModal}>
+              <i className="bi bi-plus-lg me-1"></i> + Farmer Payment / Purchase
+            </Button>
+          )
         }
       />
 
@@ -238,7 +242,7 @@ export default function FarmerPaymentsPage() {
               <p className="mt-2 text-muted">Loading farmer transactions...</p>
             </div>
           ) : (
-            <Table hover responsive className="mb-0 align-middle small">
+            <Table hover responsive className="mb-0 align-middle small mobile-card-table">
               <thead className="bg-light">
                 <tr>
                   <th>Date</th>
@@ -247,49 +251,55 @@ export default function FarmerPaymentsPage() {
                   <th className="text-end">Amount</th>
                   <th>Payment Mode</th>
                   <th>Remarks</th>
-                  <th className="text-center">Actions</th>
+                  {(canEdit || canDelete) && <th className="text-center">Actions</th>}
                 </tr>
               </thead>
               <tbody>
                 {transactions.length > 0 ? (
                   transactions.map((tx) => (
                     <tr key={tx.id}>
-                      <td className="fw-semibold">{formatDate(tx.transaction_date)}</td>
-                      <td className="fw-bold text-dark">{tx.party_name}</td>
-                      <td>
+                      <td data-label="Date" className="fw-semibold">{formatDate(tx.transaction_date)}</td>
+                      <td data-label="Farmer Name" className="fw-bold text-dark">{tx.party_name}</td>
+                      <td data-label="Transaction Type">
                         <Badge bg={tx.transaction_type === 'PURCHASE' ? 'warning' : 'info'} className="px-2 py-1">
                           {tx.transaction_type === 'PURCHASE' ? 'Plant Purchase' : 'Farmer Payment'}
                         </Badge>
                       </td>
-                      <td className="text-end fw-bold fs-6">
+                      <td data-label="Amount" className="text-end fw-bold fs-6">
                         {formatCurrency(tx.amount)}
                       </td>
-                      <td>{tx.payment_mode}</td>
-                      <td className="text-muted">{tx.remarks || '-'}</td>
-                      <td className="text-center">
-                        <div className="btn-group btn-group-sm">
-                          <Button
-                            variant="outline-secondary"
-                            title="Edit Transaction"
-                            onClick={() => handleOpenEditModal(tx)}
-                          >
-                            <i className="bi bi-pencil"></i>
-                          </Button>
-                          <Button
-                            variant="outline-danger"
-                            title="Delete Transaction"
-                            onClick={() => setDeleteTarget(tx)}
-                          >
-                            <i className="bi bi-trash"></i>
-                          </Button>
-                        </div>
-                      </td>
+                      <td data-label="Payment Mode">{tx.payment_mode}</td>
+                      <td data-label="Remarks" className="text-muted">{tx.remarks || '-'}</td>
+                      {(canEdit || canDelete) && (
+                        <td data-label="Actions" className="text-center">
+                          <div className="btn-group btn-group-sm">
+                            {canEdit && (
+                              <Button
+                                variant="outline-secondary"
+                                title="Edit Transaction"
+                                onClick={() => handleOpenEditModal(tx)}
+                              >
+                                <i className="bi bi-pencil"></i>
+                              </Button>
+                            )}
+                            {canDelete && (
+                              <Button
+                                variant="outline-danger"
+                                title="Delete Transaction"
+                                onClick={() => setDeleteTarget(tx)}
+                              >
+                                <i className="bi bi-trash"></i>
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))
                 ) : (
                   <tr>
                     <td colSpan="7" className="text-center text-muted py-4">
-                      No farmer transaction records found. Click <strong>+ Farmer Payment / Purchase</strong> to record one.
+                      No farmer transaction records found.
                     </td>
                   </tr>
                 )}

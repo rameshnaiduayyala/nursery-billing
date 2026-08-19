@@ -4,11 +4,13 @@ import customerService from '../services/customerService';
 import transactionService from '../services/transactionService';
 import PageHeader from '../components/Common/PageHeader';
 import DeleteConfirmModal from '../components/Common/DeleteConfirmModal';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { formatCurrency, formatDate, dateToInput } from '../utils/formatters';
 
 export default function SalesReceiptsPage() {
   const { showToast } = useToast();
+  const { canCreate, canEdit, canDelete } = useAuth();
 
   const [transactions, setTransactions] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -196,9 +198,11 @@ export default function SalesReceiptsPage() {
         title="Sales & Customer Receipts"
         subtitle="Record plant sales to customers/exporters and track receipts"
         actions={
-          <Button variant="success" size="sm" className="fw-bold" onClick={handleOpenAddModal}>
-            <i className="bi bi-plus-lg me-1"></i> + Sale / Receipt
-          </Button>
+          canCreate && (
+            <Button variant="success" size="sm" className="fw-bold" onClick={handleOpenAddModal}>
+              <i className="bi bi-plus-lg me-1"></i> + Sale / Receipt
+            </Button>
+          )
         }
       />
 
@@ -242,7 +246,7 @@ export default function SalesReceiptsPage() {
               <p className="mt-2 text-muted">Loading sales records...</p>
             </div>
           ) : (
-            <Table hover responsive className="mb-0 align-middle small">
+            <Table hover responsive className="mb-0 align-middle small mobile-card-table">
               <thead className="bg-light">
                 <tr>
                   <th>Date</th>
@@ -251,15 +255,15 @@ export default function SalesReceiptsPage() {
                   <th className="text-end">Amount</th>
                   <th>Payment Mode</th>
                   <th>Remarks</th>
-                  <th className="text-center">Actions</th>
+                  {(canEdit || canDelete) && <th className="text-center">Actions</th>}
                 </tr>
               </thead>
               <tbody>
                 {transactions.length > 0 ? (
                   transactions.map((tx) => (
                     <tr key={tx.id}>
-                      <td className="fw-semibold">{formatDate(tx.transaction_date)}</td>
-                      <td>
+                      <td data-label="Date" className="fw-semibold">{formatDate(tx.transaction_date)}</td>
+                      <td data-label="Customer / Exporter">
                         <span className="fw-bold text-dark">{tx.party_name}</span>
                         {tx.customer_type && (
                           <Badge bg={tx.customer_type === 'EXPORTER' ? 'secondary' : 'light'} className="text-dark border ms-2">
@@ -267,40 +271,46 @@ export default function SalesReceiptsPage() {
                           </Badge>
                         )}
                       </td>
-                      <td>
+                      <td data-label="Transaction Type">
                         <Badge bg={tx.transaction_type === 'SALE' ? 'success' : 'primary'} className="px-2 py-1">
                           {tx.transaction_type === 'SALE' ? 'Plant Sale' : 'Customer Receipt'}
                         </Badge>
                       </td>
-                      <td className="text-end fw-bold fs-6">
+                      <td data-label="Amount" className="text-end fw-bold fs-6">
                         {formatCurrency(tx.amount)}
                       </td>
-                      <td>{tx.payment_mode}</td>
-                      <td className="text-muted">{tx.remarks || '-'}</td>
-                      <td className="text-center">
-                        <div className="btn-group btn-group-sm">
-                          <Button
-                            variant="outline-secondary"
-                            title="Edit Transaction"
-                            onClick={() => handleOpenEditModal(tx)}
-                          >
-                            <i className="bi bi-pencil"></i>
-                          </Button>
-                          <Button
-                            variant="outline-danger"
-                            title="Delete Transaction"
-                            onClick={() => setDeleteTarget(tx)}
-                          >
-                            <i className="bi bi-trash"></i>
-                          </Button>
-                        </div>
-                      </td>
+                      <td data-label="Payment Mode">{tx.payment_mode}</td>
+                      <td data-label="Remarks" className="text-muted">{tx.remarks || '-'}</td>
+                      {(canEdit || canDelete) && (
+                        <td data-label="Actions" className="text-center">
+                          <div className="btn-group btn-group-sm">
+                            {canEdit && (
+                              <Button
+                                variant="outline-secondary"
+                                title="Edit Transaction"
+                                onClick={() => handleOpenEditModal(tx)}
+                              >
+                                <i className="bi bi-pencil"></i>
+                              </Button>
+                            )}
+                            {canDelete && (
+                              <Button
+                                variant="outline-danger"
+                                title="Delete Transaction"
+                                onClick={() => setDeleteTarget(tx)}
+                              >
+                                <i className="bi bi-trash"></i>
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))
                 ) : (
                   <tr>
                     <td colSpan="7" className="text-center text-muted py-4">
-                      No sales or receipts found. Click <strong>+ Sale / Receipt</strong> to record one.
+                      No sales or receipts found.
                     </td>
                   </tr>
                 )}

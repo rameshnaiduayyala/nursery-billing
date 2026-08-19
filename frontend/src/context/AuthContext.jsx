@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
           }
         })
         .catch(() => {
-          // Keep existing local user state or clean up if token invalid
+          // Token error fallback
         })
         .finally(() => setLoading(false));
     } else {
@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }) => {
     try {
       await authService.logout();
     } catch (e) {
-      // Ignore network logout errors
+      // Ignore network errors
     } finally {
       localStorage.removeItem('nursery_token');
       localStorage.removeItem('nursery_user');
@@ -53,8 +53,32 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // User Role Helpers
+  const role = (user?.role || 'ADMIN').toUpperCase();
+  const isAdmin = role === 'ADMIN';
+  const isManager = role === 'MANAGER' || role === 'ADMIN';
+  const isViewer = role === 'VIEWER';
+
+  const canCreate = isAdmin || isManager;
+  const canEdit = isAdmin || isManager;
+  const canDelete = isAdmin; // Only Admin can delete records
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        logout,
+        loading,
+        role,
+        isAdmin,
+        isManager,
+        isViewer,
+        canCreate,
+        canEdit,
+        canDelete
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

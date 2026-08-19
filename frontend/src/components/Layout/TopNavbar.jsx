@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Navbar, Container, Button, Dropdown, Modal, Form } from 'react-bootstrap';
+import { Navbar, Container, Button, Dropdown, Modal, Form, Badge } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import authService from '../../services/authService';
 import logoImg from '../../assets/Gangadhara_logo.png';
 
 export default function TopNavbar({ collapsed, onToggleCollapse, onToggleMobileMenu }) {
-  const { user, logout } = useAuth();
+  const { user, logout, role, isAdmin, isViewer } = useAuth();
   const { showToast } = useToast();
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -39,6 +39,19 @@ export default function TopNavbar({ collapsed, onToggleCollapse, onToggleMobileM
     }
   };
 
+  const getRoleBadge = (r) => {
+    switch (r) {
+      case 'ADMIN':
+        return <Badge bg="danger" className="ms-1 px-2 py-1">ADMIN</Badge>;
+      case 'MANAGER':
+        return <Badge bg="primary" className="ms-1 px-2 py-1">MANAGER</Badge>;
+      case 'VIEWER':
+        return <Badge bg="warning" text="dark" className="ms-1 px-2 py-1">VIEWER (Read-Only)</Badge>;
+      default:
+        return <Badge bg="secondary" className="ms-1 px-2 py-1">{r}</Badge>;
+    }
+  };
+
   return (
     <>
       <Navbar bg="white" className="shadow-sm border-bottom px-3 py-2 sticky-top">
@@ -52,7 +65,6 @@ export default function TopNavbar({ collapsed, onToggleCollapse, onToggleMobileM
             >
               <i className="bi bi-list fs-4"></i>
             </Button>
-
 
             <img
               src={logoImg}
@@ -70,11 +82,17 @@ export default function TopNavbar({ collapsed, onToggleCollapse, onToggleMobileM
             {user ? (
               <Dropdown align="end">
                 <Dropdown.Toggle variant="light" id="user-dropdown" className="border d-flex align-items-center gap-2 py-1 px-3 rounded-pill">
-                  <i className="bi bi-person-circle fs-5 text-success"></i>
-                  <span className="fw-semibold text-dark me-1">{user.name}</span>
+                  <i className={`bi ${isAdmin ? 'bi-shield-lock-fill text-danger' : isViewer ? 'bi-eye-fill text-warning' : 'bi-person-badge-fill text-primary'} fs-5`}></i>
+                  <div className="d-flex align-items-center">
+                    <span className="fw-semibold text-dark me-1">{user.name}</span>
+                    {getRoleBadge(role)}
+                  </div>
                 </Dropdown.Toggle>
                 <Dropdown.Menu className="shadow border-0">
-                  <Dropdown.Header>Logged in as <strong>{user.email}</strong></Dropdown.Header>
+                  <Dropdown.Header>
+                    Logged in as <strong>{user.email}</strong>
+                    <div className="mt-1">{getRoleBadge(role)}</div>
+                  </Dropdown.Header>
                   <Dropdown.Divider />
                   <Dropdown.Item onClick={() => setShowPasswordModal(true)}>
                     <i className="bi bi-key me-2 text-primary"></i>Change Password

@@ -15,6 +15,7 @@ import SalesReceiptsPage from './pages/SalesReceiptsPage';
 import ExpensesPage from './pages/expenses/ExpensesPage';
 import TransactionsPage from './pages/transactions/TransactionsPage';
 import RemindersPage from './pages/RemindersPage';
+import UsersPage from './pages/users/UsersPage';
 import ProfitLossPage from './pages/ProfitLossPage';
 import ReportsPage from './pages/reports/ReportsPage';
 import { Spinner } from 'react-bootstrap';
@@ -32,6 +33,24 @@ function ProtectedRoute({ children }) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  return <MainLayout>{children}</MainLayout>;
+}
+
+function AdminRoute({ children }) {
+  const { user, isAdmin, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
+        <Spinner animation="border" variant="success" />
+      </div>
+    );
+  }
+
+  if (!user || !isAdmin) {
+    return <Navigate to="/" replace />;
   }
 
   return <MainLayout>{children}</MainLayout>;
@@ -128,6 +147,15 @@ function App() {
                 <ProtectedRoute>
                   <RemindersPage />
                 </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/users"
+              element={
+                <AdminRoute>
+                  <UsersPage />
+                </AdminRoute>
               }
             />
 

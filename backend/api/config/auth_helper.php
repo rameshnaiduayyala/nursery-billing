@@ -26,16 +26,34 @@ function getInputData() {
 
 function autoSeedAdminIfEmpty($pdo) {
     try {
-        $stmt = $pdo->query("SELECT COUNT(*) as count FROM users");
+        // Seed default Admin if missing
+        $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM users WHERE LOWER(email) = 'admin@nursery.com'");
+        $stmt->execute();
         $row = $stmt->fetch();
         if ((int)$row['count'] === 0) {
             $hash = password_hash('admin123', PASSWORD_DEFAULT);
-            $stmt = $pdo->prepare("INSERT INTO users (name, email, password_hash, role, status) VALUES (:name, :email, :hash, 'admin', 1)");
-            $stmt->execute([
-                ':name' => 'Admin Manager',
-                ':email' => 'admin@nursery.com',
-                ':hash' => $hash
-            ]);
+            $stmt = $pdo->prepare("INSERT INTO users (name, email, password_hash, role, status) VALUES ('Admin Manager', 'admin@nursery.com', :hash, 'admin', 1)");
+            $stmt->execute([':hash' => $hash]);
+        }
+
+        // Seed default Manager if missing
+        $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM users WHERE LOWER(email) = 'manager@nursery.com'");
+        $stmt->execute();
+        $row = $stmt->fetch();
+        if ((int)$row['count'] === 0) {
+            $hash = password_hash('manager123', PASSWORD_DEFAULT);
+            $stmt = $pdo->prepare("INSERT INTO users (name, email, password_hash, role, status) VALUES ('Store Manager', 'manager@nursery.com', :hash, 'manager', 1)");
+            $stmt->execute([':hash' => $hash]);
+        }
+
+        // Seed default Viewer if missing
+        $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM users WHERE LOWER(email) = 'viewer@nursery.com'");
+        $stmt->execute();
+        $row = $stmt->fetch();
+        if ((int)$row['count'] === 0) {
+            $hash = password_hash('viewer123', PASSWORD_DEFAULT);
+            $stmt = $pdo->prepare("INSERT INTO users (name, email, password_hash, role, status) VALUES ('ReadOnly Viewer', 'viewer@nursery.com', :hash, 'viewer', 1)");
+            $stmt->execute([':hash' => $hash]);
         }
     } catch (Exception $e) {
         // Table might not exist yet or error, ignore
@@ -55,7 +73,7 @@ function requireAuth($pdo) {
         }
     }
 
-    // 2. Check Authorization Header (Bearer token simulated as base64 or session id)
+    // 2. Check Authorization Header (Bearer token simulated as user_ID)
     $headers = getallheaders();
     $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
     if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
@@ -71,8 +89,7 @@ function requireAuth($pdo) {
         }
     }
 
-    // Default development fallback: Return default admin if no auth is strictly required for dev testing
-    // Or send error if unauthorized. Let's return admin if session/header not provided to avoid breaking dev API calls.
+    // Default fallback: Return default admin
     $stmt = $pdo->query("SELECT id, name, email, role, status FROM users LIMIT 1");
     $user = $stmt->fetch();
     if ($user) {
@@ -80,4 +97,12 @@ function requireAuth($pdo) {
     }
 
     sendError('Unauthorized access', 401);
+}
+
+function requireRole($user, $allowedRoles = ['ADMIN', 'MANAGER']) {
+    $userRole = strtoupper(trim($user['role'] ?? 'VIEWER'));
+    $allowedUpper = array_map('strtoupper', $allowedRoles);
+    if (!in_array($userRole, $allowedUpper)) {
+        sendError('Forbidden: Your account role (' . $userRole . ') does not have permission to perform this operation.', 403);
+    }
 }

@@ -5,6 +5,7 @@ import farmerService from '../../services/farmerService';
 import FarmerModal from '../../components/Farmers/FarmerModal';
 import PageHeader from '../../components/Common/PageHeader';
 import DeleteConfirmModal from '../../components/Common/DeleteConfirmModal';
+import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { formatCurrency } from '../../utils/formatters';
 import { exportToCsv } from '../../utils/exportCsv';
@@ -12,6 +13,7 @@ import { exportToCsv } from '../../utils/exportCsv';
 export default function FarmersPage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { canCreate, canEdit, canDelete } = useAuth();
 
   const [farmers, setFarmers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -96,9 +98,11 @@ export default function FarmersPage() {
             <Button variant="outline-secondary" size="sm" onClick={handleExportCsv}>
               <i className="bi bi-download me-1"></i> Export CSV
             </Button>
-            <Button variant="success" size="sm" className="fw-bold" onClick={handleAddFarmer}>
-              <i className="bi bi-plus-lg me-1"></i> Add Farmer
-            </Button>
+            {canCreate && (
+              <Button variant="success" size="sm" className="fw-bold" onClick={handleAddFarmer}>
+                <i className="bi bi-plus-lg me-1"></i> Add Farmer
+              </Button>
+            )}
           </>
         }
       />
@@ -164,20 +168,24 @@ export default function FarmersPage() {
                           >
                             <i className="bi bi-journal-text me-1"></i> Ledger
                           </Button>
-                          <Button
-                            variant="outline-secondary"
-                            title="Edit Farmer"
-                            onClick={() => handleEditFarmer(farmer)}
-                          >
-                            <i className="bi bi-pencil"></i>
-                          </Button>
-                          <Button
-                            variant="outline-danger"
-                            title="Delete Farmer"
-                            onClick={() => setDeleteTarget(farmer)}
-                          >
-                            <i className="bi bi-trash"></i>
-                          </Button>
+                          {canEdit && (
+                            <Button
+                              variant="outline-secondary"
+                              title="Edit Farmer"
+                              onClick={() => handleEditFarmer(farmer)}
+                            >
+                              <i className="bi bi-pencil"></i>
+                            </Button>
+                          )}
+                          {canDelete && (
+                            <Button
+                              variant="outline-danger"
+                              title="Delete Farmer"
+                              onClick={() => setDeleteTarget(farmer)}
+                            >
+                              <i className="bi bi-trash"></i>
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -185,7 +193,7 @@ export default function FarmersPage() {
                 ) : (
                   <tr>
                     <td colSpan="9" className="text-center text-muted py-4">
-                      No farmers found. Click <strong>+ Add Farmer</strong> to create one.
+                      No farmers found.
                     </td>
                   </tr>
                 )}

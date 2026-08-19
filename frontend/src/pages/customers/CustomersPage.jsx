@@ -5,6 +5,7 @@ import customerService from '../../services/customerService';
 import CustomerModal from '../../components/Customers/CustomerModal';
 import PageHeader from '../../components/Common/PageHeader';
 import DeleteConfirmModal from '../../components/Common/DeleteConfirmModal';
+import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { formatCurrency } from '../../utils/formatters';
 import { exportToCsv } from '../../utils/exportCsv';
@@ -12,6 +13,7 @@ import { exportToCsv } from '../../utils/exportCsv';
 export default function CustomersPage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { canCreate, canEdit, canDelete } = useAuth();
 
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -100,9 +102,11 @@ export default function CustomersPage() {
             <Button variant="outline-secondary" size="sm" onClick={handleExportCsv}>
               <i className="bi bi-download me-1"></i> Export CSV
             </Button>
-            <Button variant="primary" size="sm" className="fw-bold" onClick={handleAddCustomer}>
-              <i className="bi bi-plus-lg me-1"></i> Add Customer / Exporter
-            </Button>
+            {canCreate && (
+              <Button variant="primary" size="sm" className="fw-bold" onClick={handleAddCustomer}>
+                <i className="bi bi-plus-lg me-1"></i> Add Customer / Exporter
+              </Button>
+            )}
           </>
         }
       />
@@ -186,20 +190,24 @@ export default function CustomersPage() {
                           >
                             <i className="bi bi-journal-text me-1"></i> Ledger
                           </Button>
-                          <Button
-                            variant="outline-secondary"
-                            title="Edit Customer"
-                            onClick={() => handleEditCustomer(cust)}
-                          >
-                            <i className="bi bi-pencil"></i>
-                          </Button>
-                          <Button
-                            variant="outline-danger"
-                            title="Delete Customer"
-                            onClick={() => setDeleteTarget(cust)}
-                          >
-                            <i className="bi bi-trash"></i>
-                          </Button>
+                          {canEdit && (
+                            <Button
+                              variant="outline-secondary"
+                              title="Edit Customer"
+                              onClick={() => handleEditCustomer(cust)}
+                            >
+                              <i className="bi bi-pencil"></i>
+                            </Button>
+                          )}
+                          {canDelete && (
+                            <Button
+                              variant="outline-danger"
+                              title="Delete Customer"
+                              onClick={() => setDeleteTarget(cust)}
+                            >
+                              <i className="bi bi-trash"></i>
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -207,7 +215,7 @@ export default function CustomersPage() {
                 ) : (
                   <tr>
                     <td colSpan="7" className="text-center text-muted py-4">
-                      No customers/exporters found. Click <strong>+ Add Customer / Exporter</strong> to create one.
+                      No customers/exporters found.
                     </td>
                   </tr>
                 )}

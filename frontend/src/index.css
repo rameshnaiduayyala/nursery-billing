@@ -7,12 +7,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.hover-bg-dark:hover {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-.card {
-  transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+/* Table styling & Mobile Horizontal Touch Scrolling */
+.table-responsive {
+  -webkit-overflow-scrolling: touch;
+  overflow-x: auto;
 }
 
 .table th {
@@ -21,10 +19,137 @@ body {
   font-size: 0.75rem;
   letter-spacing: 0.5px;
   color: #6c757d;
+  white-space: nowrap;
+}
+
+.table td {
+  white-space: nowrap;
+}
+
+.hover-bg-dark:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.card {
+  transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 
 .btn-group-sm > .btn {
   font-size: 0.75rem;
+}
+
+/* Mobile Screen Responsiveness (< 768px) */
+@media (max-width: 767.98px) {
+  body {
+    font-size: 0.875rem;
+  }
+
+  .container-fluid {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  /* PageHeader actions stack nicely on mobile */
+  .page-header-actions {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .page-header-actions .btn {
+    flex: 1 1 auto;
+    text-align: center;
+    justify-content: center;
+  }
+
+  /* StatCard text scaling on mobile */
+  .card h4 {
+    font-size: 1.25rem !important;
+  }
+
+  /* Mobile Card Table Transformation */
+  .mobile-card-table thead {
+    display: none;
+  }
+
+  .mobile-card-table tbody tr {
+    display: block;
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+
+  .mobile-card-table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: none;
+    border-bottom: 1px dashed #f1f3f5;
+    padding: 8px 0 !important;
+    white-space: normal !important;
+    text-align: right !important;
+  }
+
+  .mobile-card-table tbody td:last-child {
+    border-bottom: none;
+    justify-content: center;
+    padding-top: 10px !important;
+    text-align: center !important;
+  }
+
+  .mobile-card-table tbody td[data-label]::before {
+    content: attr(data-label);
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    margin-right: 12px;
+    text-align: left;
+    flex-shrink: 0;
+  }
+
+  /* Action button groups wrap on small screens */
+  .btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .btn-group .btn {
+    border-radius: 6px !important;
+    flex: 1 1 auto;
+  }
+
+  /* Modal responsive adjustments */
+  .modal-dialog {
+    margin: 10px;
+  }
+}
+
+/* Extra Small Screens (< 576px) */
+@media (max-width: 575.98px) {
+  .date-range-picker {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .date-range-picker .form-control,
+  .date-range-picker .form-select,
+  .date-range-picker .btn {
+    width: 100% !important;
+  }
+
+  .table td, .table th {
+    padding: 0.5rem 0.6rem !important;
+    font-size: 0.8rem;
+  }
 }
 
 /* Print Styles */
@@ -40,13 +165,6 @@ body {
   header,
   footer {
     display: none !important;
-  }
-
-  .col-lg-10 {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
   }
 
   .print-card {

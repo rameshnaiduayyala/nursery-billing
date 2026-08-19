@@ -143,7 +143,7 @@ export default function CustomersPage() {
               <p className="mt-2 text-muted">Loading customers...</p>
             </div>
           ) : (
-            <Table hover responsive className="mb-0 align-middle">
+            <Table hover responsive className="mb-0 align-middle mobile-card-table">
               <thead className="bg-light">
                 <tr>
                   <th>Name</th>
@@ -159,25 +159,25 @@ export default function CustomersPage() {
                 {customers.length > 0 ? (
                   customers.map((cust) => (
                     <tr key={cust.id}>
-                      <td>
+                      <td data-label="Name">
                         <div className="fw-bold text-dark">{cust.name}</div>
                         {cust.gst_number && <small className="text-muted d-block">GST: {cust.gst_number}</small>}
                       </td>
-                      <td>
+                      <td data-label="Type">
                         <Badge bg={cust.type === 'EXPORTER' ? 'purple' : 'primary'} style={cust.type === 'EXPORTER' ? { backgroundColor: '#6f42c1' } : {}}>
                           {cust.type}
                         </Badge>
                       </td>
-                      <td>
+                      <td data-label="Phone / City">
                         <div>{cust.phone || '-'}</div>
                         <small className="text-muted">{cust.city || 'Location N/A'}</small>
                       </td>
-                      <td className="text-end fw-semibold text-success">{formatCurrency(cust.total_sales)}</td>
-                      <td className="text-end fw-semibold text-primary">{formatCurrency(cust.total_received)}</td>
-                      <td className="text-end fw-bold text-danger">
+                      <td data-label="Total Sales" className="text-end fw-semibold text-success">{formatCurrency(cust.total_sales)}</td>
+                      <td data-label="Total Received" className="text-end fw-semibold text-primary">{formatCurrency(cust.total_received)}</td>
+                      <td data-label="Outstanding" className="text-end fw-bold text-danger">
                         {formatCurrency(cust.outstanding)}
                       </td>
-                      <td className="text-center">
+                      <td data-label="Actions" className="text-center">
                         <div className="btn-group btn-group-sm">
                           <Button
                             variant="outline-primary"

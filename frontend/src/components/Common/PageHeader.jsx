@@ -10,7 +10,7 @@ export default function PageHeader({ title, subtitle, actions }) {
         {subtitle && <p className="text-muted small mb-0">{subtitle}</p>}
       </div>
       {actions && (
-        <div className="mt-2 mt-md-0 d-flex gap-2 align-items-center">
+        <div className="page-header-actions mt-2 mt-md-0 d-flex gap-2 align-items-center">
           {actions}
         </div>
       )}

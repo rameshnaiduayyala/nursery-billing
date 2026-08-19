@@ -123,7 +123,7 @@ export default function FarmersPage() {
               <p className="mt-2 text-muted">Loading farmers...</p>
             </div>
           ) : (
-            <Table hover responsive className="mb-0 align-middle">
+            <Table hover responsive className="mb-0 align-middle mobile-card-table">
               <thead className="bg-light">
                 <tr>
                   <th>ID</th>
@@ -141,21 +141,21 @@ export default function FarmersPage() {
                 {farmers.length > 0 ? (
                   farmers.map((farmer) => (
                     <tr key={farmer.id}>
-                      <td className="fw-bold text-secondary">#{farmer.id}</td>
-                      <td className="fw-semibold text-dark">{farmer.name}</td>
-                      <td>{farmer.phone || '-'}</td>
-                      <td>{farmer.location || '-'}</td>
-                      <td className="text-end fw-semibold text-warning">{formatCurrency(farmer.total_purchase)}</td>
-                      <td className="text-end fw-semibold text-info">{formatCurrency(farmer.total_paid)}</td>
-                      <td className="text-end fw-bold text-danger">
+                      <td data-label="ID" className="fw-bold text-secondary">#{farmer.id}</td>
+                      <td data-label="Farmer Name" className="fw-semibold text-dark">{farmer.name}</td>
+                      <td data-label="Phone">{farmer.phone || '-'}</td>
+                      <td data-label="Location">{farmer.location || '-'}</td>
+                      <td data-label="Total Purchase" className="text-end fw-semibold text-warning">{formatCurrency(farmer.total_purchase)}</td>
+                      <td data-label="Total Paid" className="text-end fw-semibold text-info">{formatCurrency(farmer.total_paid)}</td>
+                      <td data-label="Outstanding" className="text-end fw-bold text-danger">
                         {formatCurrency(farmer.outstanding)}
                       </td>
-                      <td>
+                      <td data-label="Status">
                         <Badge bg={farmer.status === 1 ? 'success' : 'secondary'}>
                           {farmer.status === 1 ? 'Active' : 'Inactive'}
                         </Badge>
                       </td>
-                      <td className="text-center">
+                      <td data-label="Actions" className="text-center">
                         <div className="btn-group btn-group-sm">
                           <Button
                             variant="outline-primary"

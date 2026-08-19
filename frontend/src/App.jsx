@@ -19,6 +19,8 @@ import UsersPage from './pages/users/UsersPage';
 import ProfitLossPage from './pages/ProfitLossPage';
 import ReportsPage from './pages/reports/ReportsPage';
 import BackupRestorePage from './pages/settings/BackupRestorePage';
+import ExpenseCategoriesPage from './pages/settings/ExpenseCategoriesPage';
+import PaymentModesPage from './pages/settings/PaymentModesPage';
 import { Spinner } from 'react-bootstrap';
 
 function ProtectedRoute({ children }) {
@@ -165,6 +167,24 @@ function App() {
               element={
                 <AdminRoute>
                   <BackupRestorePage />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="/settings/expense-categories"
+              element={
+                <AdminRoute>
+                  <ExpenseCategoriesPage />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="/settings/payment-modes"
+              element={
+                <AdminRoute>
+                  <PaymentModesPage />
                 </AdminRoute>
               }
             />

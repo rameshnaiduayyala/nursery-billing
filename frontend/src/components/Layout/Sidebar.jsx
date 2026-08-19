@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Sidebar as ProSidebar, Menu, MenuItem } from 'react-pro-sidebar';
+import { Sidebar as ProSidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
 import { Offcanvas, Button } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
 import logoImg from '../../assets/Gangadhara_logo.png';
@@ -22,15 +22,8 @@ export function SidebarContent({ collapsed, onToggleCollapse, onLinkClick }) {
   const location = useLocation();
   const { isAdmin } = useAuth();
 
-  // Dynamically include Users Management and Backup & Restore if user is ADMIN
-  const navItems = isAdmin
-    ? [
-        ...baseNavItems.slice(0, 8),
-        { label: 'User Management', path: '/users', icon: 'bi-person-gear' },
-        ...baseNavItems.slice(8),
-        { label: 'Backup & Restore', path: '/settings/backup', icon: 'bi-database-fill-gear' },
-      ]
-    : baseNavItems;
+  const isSettingsActive =
+    location.pathname.startsWith('/settings') || location.pathname === '/users';
 
   return (
     <div className="d-flex flex-column h-100 bg-dark text-white">
@@ -86,9 +79,12 @@ export function SidebarContent({ collapsed, onToggleCollapse, onLinkClick }) {
                   color: '#ffffff',
                 },
               }),
+              subMenuContent: () => ({
+                backgroundColor: 'rgba(0, 0, 0, 0.2)',
+              }),
             }}
           >
-            {navItems.map((item) => {
+            {baseNavItems.map((item) => {
               const isActive = item.path === '/'
                 ? location.pathname === '/'
                 : location.pathname.startsWith(item.path);
@@ -104,6 +100,44 @@ export function SidebarContent({ collapsed, onToggleCollapse, onLinkClick }) {
                 </MenuItem>
               );
             })}
+
+            {/* Grouped Settings Submenu for Admin */}
+            {isAdmin && (
+              <SubMenu
+                label={!collapsed ? 'Settings' : ''}
+                icon={<i className="bi bi-gear-fill fs-5"></i>}
+                active={isSettingsActive}
+              >
+                <MenuItem
+                  active={location.pathname === '/users'}
+                  component={<NavLink to="/users" onClick={onLinkClick} />}
+                  icon={<i className="bi bi-person-gear fs-6"></i>}
+                >
+                  User Management
+                </MenuItem>
+                <MenuItem
+                  active={location.pathname === '/settings/expense-categories'}
+                  component={<NavLink to="/settings/expense-categories" onClick={onLinkClick} />}
+                  icon={<i className="bi bi-tags-fill fs-6"></i>}
+                >
+                  Expense Categories
+                </MenuItem>
+                <MenuItem
+                  active={location.pathname === '/settings/payment-modes'}
+                  component={<NavLink to="/settings/payment-modes" onClick={onLinkClick} />}
+                  icon={<i className="bi bi-credit-card-2-front-fill fs-6"></i>}
+                >
+                  Payment Modes
+                </MenuItem>
+                <MenuItem
+                  active={location.pathname === '/settings/backup'}
+                  component={<NavLink to="/settings/backup" onClick={onLinkClick} />}
+                  icon={<i className="bi bi-database-fill-gear fs-6"></i>}
+                >
+                  Backup & Restore
+                </MenuItem>
+              </SubMenu>
+            )}
           </Menu>
         </ProSidebar>
       </div>

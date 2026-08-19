@@ -6,17 +6,22 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     sendError('Method not allowed', 405);
 }
 
-$user = requireAuth($pdo);
-requireRole($user, ['ADMIN']);
+try {
+    $user = requireAuth($pdo);
+    requireRole($user, ['ADMIN']);
 
-$result = createDatabaseBackup($pdo, 'MANUAL', $user['id'], $user['email']);
+    $result = createDatabaseBackup($pdo, 'MANUAL', $user['id'] ?? null, $user['email'] ?? null);
 
-if ($result['success']) {
-    sendJson([
-        'success' => true,
-        'message' => 'Database backup created successfully',
-        'data' => $result
-    ]);
-} else {
-    sendError($result['message'], 500);
+    if (!empty($result['success'])) {
+        sendJson([
+            'success' => true,
+            'message' => 'Database backup created successfully',
+            'data' => $result
+        ]);
+    } else {
+        $msg = $result['message'] ?? 'Failed to create backup';
+        sendError($msg, 500);
+    }
+} catch (Throwable $e) {
+    sendError('Backup creation system error: ' . $e->getMessage(), 500);
 }

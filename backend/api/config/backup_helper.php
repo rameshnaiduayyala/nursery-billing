@@ -73,28 +73,31 @@ function ensureBackupTablesExist($pdo) {
  * Returns absolute path to secure backup directory outside or blocked from HTTP.
  */
 function getSecureBackupDir() {
-    // Attempt 1: Outside public directory if parent exists
-    $outsidePath = dirname(__DIR__, 4) . '/nursery_backups';
-    if (@is_dir($outsidePath) || @mkdir($outsidePath, 0755, true)) {
-        if (@is_writable($outsidePath)) {
-            protectDirectory($outsidePath);
-            return realpath($outsidePath) ?: $outsidePath;
+    $candidates = [
+        dirname(__DIR__, 2) . '/secure_backups',
+        __DIR__ . '/../../secure_backups',
+        __DIR__ . '/secure_backups',
+        sys_get_temp_dir() . '/nursery_backups'
+    ];
+
+    foreach ($candidates as $dir) {
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        if (is_dir($dir) && is_writable($dir)) {
+            protectDirectory($dir);
+            return realpath($dir) ?: $dir;
         }
     }
 
-    // Attempt 2: Inside backend secure_backups directory
-    $localPath = __DIR__ . '/../../secure_backups';
-    if (!is_dir($localPath)) {
-        @mkdir($localPath, 0755, true);
-    }
-    protectDirectory($localPath);
-    return realpath($localPath) ?: $localPath;
+    return __DIR__;
 }
 
 /**
  * Protects directory using .htaccess and index.php
  */
 function protectDirectory($dir) {
+    if (!is_dir($dir) || !is_writable($dir)) return;
     $htaccess = $dir . '/.htaccess';
     if (!file_exists($htaccess)) {
         $content = "<IfModule mod_authz_core.c>\n    Require all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\n    Order deny,allow\n    Deny from all\n</IfModule>\n";
@@ -244,6 +247,26 @@ function createDatabaseBackup($pdo, $backupType = 'MANUAL', $userId = null, $use
     ensureBackupTablesExist($pdo);
     global $host, $db, $user, $pass;
 
+    if (empty($db)) {
+        try {
+            $stmt = $pdo->query("SELECT DATABASE()");
+            $db = $stmt ? $stmt->fetchColumn() : null;
+        } catch (Exception $e) {}
+        if (empty($db)) {
+            $db = getenv('DB_NAME') ?: 'rbjpogrx_ramesh_nursery';
+        }
+    }
+
+    if (empty($host)) {
+        $host = getenv('DB_HOST') ?: 'localhost';
+    }
+    if (empty($user)) {
+        $user = getenv('DB_USER') ?: 'rbjpogrx_ramesh_nursery';
+    }
+    if (empty($pass)) {
+        $pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : 'Rameshaa@16';
+    }
+
     $backupDir = getSecureBackupDir();
     $timestamp = date('Y-m-d_His');
     $filename = "nursery_backup_{$timestamp}.sql";
@@ -262,7 +285,7 @@ function createDatabaseBackup($pdo, $backupType = 'MANUAL', $userId = null, $use
         $dbArg = escapeshellarg($db);
         $fileArg = escapeshellarg($filePath);
 
-        $cmd = "mysqldump --host={$hostArg} --user={$userArg} --password={$passArg} --routines --triggers --single-transaction {$dbArg} > {$fileArg}";
+        $cmd = "mysqldump --host={$hostArg} --user={$userArg} --password={$passArg} --no-create-db --routines --triggers --single-transaction {$dbArg} > {$fileArg}";
         
         $output = [];
         $returnVar = 1;
@@ -296,22 +319,27 @@ function createDatabaseBackup($pdo, $backupType = 'MANUAL', $userId = null, $use
 
     $fileSize = (file_exists($filePath) && $success) ? filesize($filePath) : 0;
     $status = $success ? 'SUCCESS' : 'FAILED';
+    $backupId = null;
 
     // Record in backup_logs
-    $stmt = $pdo->prepare("
-        INSERT INTO backup_logs (user_id, backup_type, filename, file_path, file_size, status, error_message)
-        VALUES (:user_id, :backup_type, :filename, :file_path, :file_size, :status, :error_message)
-    ");
-    $stmt->execute([
-        ':user_id' => $userId,
-        ':backup_type' => $backupType,
-        ':filename' => $filename,
-        ':file_path' => $filePath,
-        ':file_size' => $fileSize,
-        ':status' => $status,
-        ':error_message' => $errorMsg
-    ]);
-    $backupId = $pdo->lastInsertId();
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO backup_logs (user_id, backup_type, filename, file_path, file_size, status, error_message)
+            VALUES (:user_id, :backup_type, :filename, :file_path, :file_size, :status, :error_message)
+        ");
+        $stmt->execute([
+            ':user_id' => $userId,
+            ':backup_type' => $backupType,
+            ':filename' => $filename,
+            ':file_path' => $filePath,
+            ':file_size' => $fileSize,
+            ':status' => $status,
+            ':error_message' => $errorMsg
+        ]);
+        $backupId = $pdo->lastInsertId();
+    } catch (Exception $e) {
+        // Log insertion fallback
+    }
 
     // Audit log
     logAudit($pdo, $userId, $userEmail, 'Backup Created', [

@@ -1,11 +1,7 @@
 -- Database Schema for Nursery Management System
--- Note: Select your database in phpMyAdmin before running or importing.
+-- Note: Select your existing cPanel database (e.g. rbjpogrx_ramesh_nursery) in phpMyAdmin before running or importing.
 
--- CREATE DATABASE IF NOT EXISTS nursery_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
--- USE nursery_db;
-
-
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(120) NOT NULL,
   email VARCHAR(190) NOT NULL UNIQUE,
@@ -15,7 +11,7 @@ CREATE TABLE users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE farmers (
+CREATE TABLE IF NOT EXISTS farmers (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(180) NOT NULL,
   phone VARCHAR(30),
@@ -27,7 +23,7 @@ CREATE TABLE farmers (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-CREATE TABLE customers (
+CREATE TABLE IF NOT EXISTS customers (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(180) NOT NULL,
   type ENUM('CUSTOMER','EXPORTER') NOT NULL DEFAULT 'CUSTOMER',
@@ -42,7 +38,7 @@ CREATE TABLE customers (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-CREATE TABLE transactions (
+CREATE TABLE IF NOT EXISTS transactions (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   transaction_date DATE NOT NULL,
   party_type ENUM('FARMER','CUSTOMER') NOT NULL,
@@ -56,7 +52,7 @@ CREATE TABLE transactions (
   INDEX idx_date (transaction_date)
 );
 
-CREATE TABLE expenses (
+CREATE TABLE IF NOT EXISTS expenses (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   expense_date DATE NOT NULL,
   expense_type VARCHAR(80) NOT NULL,
@@ -68,7 +64,7 @@ CREATE TABLE expenses (
   INDEX idx_expense_date (expense_date)
 );
 
-CREATE TABLE expense_categories (
+CREATE TABLE IF NOT EXISTS expense_categories (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL UNIQUE,
   status TINYINT(1) DEFAULT 1
@@ -78,7 +74,7 @@ INSERT IGNORE INTO expense_categories(name) VALUES
 ('Travel'),('Fuel'),('Loading'),('Unloading'),('Labour'),
 ('Packing'),('Commission'),('Vehicle'),('Other');
 
-CREATE TABLE payment_modes (
+CREATE TABLE IF NOT EXISTS payment_modes (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(50) NOT NULL UNIQUE,
   status TINYINT(1) DEFAULT 1
@@ -87,7 +83,7 @@ CREATE TABLE payment_modes (
 INSERT IGNORE INTO payment_modes(name) VALUES
 ('Cash'),('UPI'),('Bank Transfer'),('Cheque'),('Other');
 
-CREATE TABLE settings (
+CREATE TABLE IF NOT EXISTS settings (
   setting_key VARCHAR(100) PRIMARY KEY,
   setting_value TEXT
 );

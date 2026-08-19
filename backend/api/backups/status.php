@@ -6,21 +6,25 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     sendError('Method not allowed', 405);
 }
 
-$user = requireAuth($pdo);
-requireRole($user, ['ADMIN']);
+try {
+    $user = requireAuth($pdo);
+    requireRole($user, ['ADMIN']);
 
-ensureBackupTablesExist($pdo);
+    ensureBackupTablesExist($pdo);
 
-$mysqldumpAvailable = isMysqldumpAvailable();
-$backupDir = getSecureBackupDir();
-$isWritable = is_writable($backupDir);
+    $mysqldumpAvailable = isMysqldumpAvailable();
+    $backupDir = getSecureBackupDir();
+    $isWritable = is_writable($backupDir);
 
-sendJson([
-    'success' => true,
-    'data' => [
-        'mysqldump_available' => $mysqldumpAvailable,
-        'backup_directory_writable' => $isWritable,
-        'database_connected' => true,
-        'backup_directory' => $backupDir
-    ]
-]);
+    sendJson([
+        'success' => true,
+        'data' => [
+            'mysqldump_available' => $mysqldumpAvailable,
+            'backup_directory_writable' => $isWritable,
+            'database_connected' => true,
+            'backup_directory' => $backupDir
+        ]
+    ]);
+} catch (Throwable $e) {
+    sendError('Status check error: ' . $e->getMessage(), 500);
+}

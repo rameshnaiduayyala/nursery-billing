@@ -245,26 +245,19 @@ function generateSqlDumpPurePhp($pdo, $dbName) {
  */
 function createDatabaseBackup($pdo, $backupType = 'MANUAL', $userId = null, $userEmail = null) {
     ensureBackupTablesExist($pdo);
-    global $host, $db, $user, $pass;
 
-    if (empty($db)) {
-        try {
-            $stmt = $pdo->query("SELECT DATABASE()");
-            $db = $stmt ? $stmt->fetchColumn() : null;
-        } catch (Exception $e) {}
-        if (empty($db)) {
-            $db = getenv('DB_NAME') ?: 'rbjpogrx_ramesh_nursery';
-        }
-    }
-
-    if (empty($host)) {
-        $host = getenv('DB_HOST') ?: 'localhost';
-    }
-    if (empty($user)) {
-        $user = getenv('DB_USER') ?: 'rbjpogrx_ramesh_nursery';
-    }
-    if (empty($pass)) {
-        $pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : 'Rameshaa@16';
+    // Resolve DB Connection Parameters from database.php globals
+    $dbHost = $GLOBALS['DB_CONFIG_HOST'] ?? 'localhost';
+    $dbUser = $GLOBALS['DB_CONFIG_USER'] ?? 'rbjpogrx_ramesh_nursery';
+    $dbPass = $GLOBALS['DB_CONFIG_PASS'] ?? 'Rameshaa@16';
+    
+    $dbName = null;
+    try {
+        $stmt = $pdo->query("SELECT DATABASE()");
+        $dbName = $stmt ? $stmt->fetchColumn() : null;
+    } catch (Exception $e) {}
+    if (empty($dbName)) {
+        $dbName = $GLOBALS['DB_CONFIG_NAME'] ?? 'rbjpogrx_ramesh_nursery';
     }
 
     $backupDir = getSecureBackupDir();
@@ -279,13 +272,13 @@ function createDatabaseBackup($pdo, $backupType = 'MANUAL', $userId = null, $use
     // Attempt 1: mysqldump CLI if available
     if (isMysqldumpAvailable()) {
         $methodUsed = 'MYSQLDUMP';
-        $hostArg = escapeshellarg($host);
-        $userArg = escapeshellarg($user);
-        $passArg = escapeshellarg($pass);
-        $dbArg = escapeshellarg($db);
-        $fileArg = escapeshellarg($filePath);
+        $hostArg = escapeshellarg((string)$dbHost);
+        $userArg = escapeshellarg((string)$dbUser);
+        $passArg = escapeshellarg((string)$dbPass);
+        $dbArg   = escapeshellarg((string)$dbName);
+        $fileArg = escapeshellarg((string)$filePath);
 
-        $cmd = "mysqldump --host={$hostArg} --user={$userArg} --password={$passArg} --no-create-db --routines --triggers --single-transaction {$dbArg} > {$fileArg}";
+        $cmd = "mysqldump --host={$hostArg} --user={$userArg} --password={$passArg} --add-drop-table --no-create-db --routines --triggers --single-transaction {$dbArg} > {$fileArg}";
         
         $output = [];
         $returnVar = 1;
@@ -305,7 +298,7 @@ function createDatabaseBackup($pdo, $backupType = 'MANUAL', $userId = null, $use
     // Fallback: Pure PHP Dumper
     if (!$success) {
         try {
-            $dumpContent = generateSqlDumpPurePhp($pdo, $db);
+            $dumpContent = generateSqlDumpPurePhp($pdo, $dbName);
             if (file_put_contents($filePath, $dumpContent) !== false && filesize($filePath) > 0) {
                 $success = true;
                 $errorMsg = null;
@@ -456,13 +449,27 @@ function restoreDatabaseFromSql($pdo, $sqlFilePath, $userId = null, $userEmail =
         // Disable foreign key checks & execute multi query
         $pdo->exec("SET FOREIGN_KEY_CHECKS=0;");
 
-        // Split queries by semicolon if needed or run batch exec
-        // Using PDO exec for entire script or statement by statement
+        // Split queries by semicolon and execute cleanly
         $queries = preg_split('/;\s*[\r\n]+/', $sqlContent);
         foreach ($queries as $query) {
             $trimmed = trim($query);
-            if ($trimmed !== '' && strpos($trimmed, '--') !== 0) {
-                $pdo->exec($trimmed);
+            if ($trimmed !== '' && strpos($trimmed, '--') !== 0 && strpos($trimmed, '/*') !== 0) {
+                // If statement is a CREATE TABLE without IF NOT EXISTS, drop table first to avoid #1050 table exists error
+                if (preg_match('/^CREATE\s+TABLE\s+(?!IF\s+NOT\s+EXISTS)(`?[\w_]+`?)/i', $trimmed, $matches)) {
+                    $tableName = $matches[1];
+                    try {
+                        $pdo->exec("DROP TABLE IF EXISTS {$tableName};");
+                    } catch (Exception $e) {}
+                }
+                
+                try {
+                    $pdo->exec($trimmed);
+                } catch (Exception $ex) {
+                    // Suppress harmless DROP failures if table didn't exist
+                    if (strpos($trimmed, 'DROP TABLE') !== 0) {
+                        throw $ex;
+                    }
+                }
             }
         }
 

@@ -21,8 +21,8 @@ export default function MainLayout({ children }) {
       <div
         className="flex-grow-1 p-0 d-flex flex-column min-vh-100"
         style={{
-          marginLeft: collapsed ? '80px' : '250px',
-          transition: 'margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+          marginLeft: collapsed ? '72px' : '256px',
+          transition: 'margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
         {/* On mobile screens, remove left margin */}

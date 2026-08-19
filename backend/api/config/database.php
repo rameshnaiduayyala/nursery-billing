@@ -4,6 +4,11 @@ $db   = getenv('DB_NAME') ?: 'rbjpogrx_ramesh_nursery';
 $user = getenv('DB_USER') ?: 'rbjpogrx_ramesh_nursery';
 $pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : 'Rameshaa@16';
 
+$GLOBALS['DB_CONFIG_HOST'] = $host;
+$GLOBALS['DB_CONFIG_NAME'] = $db;
+$GLOBALS['DB_CONFIG_USER'] = $user;
+$GLOBALS['DB_CONFIG_PASS'] = $pass;
+
 try {
     $pdo = new PDO(
         "mysql:host=$host;dbname=$db;charset=utf8mb4",

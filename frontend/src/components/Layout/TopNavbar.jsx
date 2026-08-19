@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Navbar, Container, Button, Dropdown, Modal, Form, Badge } from 'react-bootstrap';
+import { Dropdown, Modal, Form, Badge } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import authService from '../../services/authService';
@@ -15,17 +15,15 @@ export default function TopNavbar({ collapsed, onToggleCollapse, onToggleMobileM
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
-
     if (passwordData.new_password !== passwordData.confirm_password) {
       showToast('New passwords do not match.', 'danger');
       return;
     }
-
     try {
       setLoading(true);
       const res = await authService.changePassword({
         current_password: passwordData.current_password,
-        new_password: passwordData.new_password
+        new_password: passwordData.new_password,
       });
       if (res.success) {
         showToast('Password updated successfully!', 'success');
@@ -39,123 +37,174 @@ export default function TopNavbar({ collapsed, onToggleCollapse, onToggleMobileM
     }
   };
 
-  const getRoleBadge = (r) => {
-    switch (r) {
-      case 'ADMIN':
-        return <Badge bg="danger" className="ms-1 px-2 py-1">ADMIN</Badge>;
-      case 'MANAGER':
-        return <Badge bg="primary" className="ms-1 px-2 py-1">MANAGER</Badge>;
-      case 'VIEWER':
-        return <Badge bg="warning" text="dark" className="ms-1 px-2 py-1">VIEWER (Read-Only)</Badge>;
-      default:
-        return <Badge bg="secondary" className="ms-1 px-2 py-1">{r}</Badge>;
-    }
+  const roleMeta = {
+    ADMIN:   { cls: 'badge-danger',   label: 'Admin',   icon: 'bi-shield-lock-fill' },
+    MANAGER: { cls: 'badge-primary',  label: 'Manager', icon: 'bi-person-badge-fill' },
+    VIEWER:  { cls: 'badge-warning',  label: 'Viewer',  icon: 'bi-eye-fill' },
   };
+  const rm = roleMeta[role] ?? { cls: 'badge-gray', label: role, icon: 'bi-person-fill' };
+
+  const initials = user?.name
+    ? user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    : user?.email?.[0]?.toUpperCase() ?? 'U';
 
   return (
     <>
-      <Navbar bg="white" className="shadow-sm border-bottom px-3 py-2 sticky-top">
-        <Container fluid className="px-0 d-flex align-items-center justify-content-between">
-          <div className="d-flex align-items-center">
-            {/* Mobile Menu Button */}
-            <Button
-              variant="outline-secondary"
-              className="d-lg-none me-2 p-1 px-2"
-              onClick={onToggleMobileMenu}
-            >
-              <i className="bi bi-list fs-4"></i>
-            </Button>
+      <nav
+        className="navbar sticky-top"
+        style={{
+          background: 'rgba(255,255,255,0.92)',
+          backdropFilter: 'blur(12px)',
+          borderBottom: '1px solid var(--border)',
+          boxShadow: 'var(--shadow-sm)',
+          height: '62px',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 20px',
+          zIndex: 100,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1, gap: '12px' }}>
+          {/* Mobile menu button */}
+          <button
+            className="d-lg-none"
+            onClick={onToggleMobileMenu}
+            style={{
+              width: '36px', height: '36px', borderRadius: '8px',
+              border: '1px solid var(--border)', background: 'transparent',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--text-secondary)',
+            }}
+          >
+            <i className="bi bi-list" style={{ fontSize: '18px' }} />
+          </button>
 
-            <img
-              src={logoImg}
-              alt="Gangadhara Nursery"
-              className="me-2 rounded"
-              style={{ width: '36px', height: '36px', objectFit: 'contain' }}
-            />
-            <div>
-              <span className="fw-bold fs-5 text-success me-2">Gangadhara Nursery</span>
-              <span className="text-muted small border-start ps-2 d-none d-md-inline">Management System</span>
-            </div>
+          {/* Logo + Brand (mobile) */}
+          <div className="d-flex d-lg-none align-items-center gap-2">
+            <img src={logoImg} alt="Logo" style={{ width: 30, height: 30, borderRadius: 7, objectFit: 'contain' }} />
+            <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>Gangadhara Nursery</span>
           </div>
 
-          <div className="d-flex align-items-center gap-2">
-            {user ? (
-              <Dropdown align="end">
-                <Dropdown.Toggle variant="light" id="user-dropdown" className="border d-flex align-items-center gap-2 py-1 px-3 rounded-pill">
-                  <i className={`bi ${isAdmin ? 'bi-shield-lock-fill text-danger' : isViewer ? 'bi-eye-fill text-warning' : 'bi-person-badge-fill text-primary'} fs-5`}></i>
-                  <div className="d-flex align-items-center">
-                    <span className="fw-semibold text-dark me-1">{user.name}</span>
-                    {getRoleBadge(role)}
-                  </div>
-                </Dropdown.Toggle>
-                <Dropdown.Menu className="shadow border-0">
-                  <Dropdown.Header>
-                    Logged in as <strong>{user.email}</strong>
-                    <div className="mt-1">{getRoleBadge(role)}</div>
-                  </Dropdown.Header>
-                  <Dropdown.Divider />
-                  <Dropdown.Item onClick={() => setShowPasswordModal(true)}>
-                    <i className="bi bi-key me-2 text-primary"></i>Change Password
-                  </Dropdown.Item>
-                  <Dropdown.Item onClick={logout} className="text-danger">
-                    <i className="bi bi-box-arrow-right me-2"></i>Logout
-                  </Dropdown.Item>
-                </Dropdown.Menu>
-              </Dropdown>
-            ) : (
-              <Button variant="outline-success" size="sm" href="/login">Login</Button>
-            )}
+          {/* Desktop breadcrumb / page context */}
+          <div className="d-none d-lg-flex align-items-center gap-2" style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+            <i className="bi bi-house-fill" style={{ color: 'var(--emerald)' }} />
+            <span style={{ color: 'var(--border)' }}>/</span>
+            <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Gangadhara Nursery</span>
           </div>
-        </Container>
-      </Navbar>
+        </div>
+
+        {/* Right side */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Role badge */}
+          <span className={`badge-pill ${rm.cls} d-none d-md-inline-flex`}>
+            <i className={`bi ${rm.icon}`} />
+            {rm.label}
+          </span>
+
+          {/* User dropdown */}
+          {user && (
+            <Dropdown align="end">
+              <Dropdown.Toggle
+                as="button"
+                id="user-menu"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  padding: '5px 12px 5px 5px',
+                  borderRadius: '24px',
+                  border: '1px solid var(--border)',
+                  background: 'var(--surface)',
+                  cursor: 'pointer',
+                  transition: 'var(--transition)',
+                }}
+                className="user-menu-toggle"
+              >
+                {/* Avatar */}
+                <div style={{
+                  width: '30px', height: '30px', borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#fff', fontWeight: 700, fontSize: '12px', flexShrink: 0,
+                }}>
+                  {initials}
+                </div>
+                <div className="d-none d-sm-flex flex-column" style={{ lineHeight: 1.2, textAlign: 'left' }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {user.name || user.email}
+                  </span>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{user.email}</span>
+                </div>
+                <i className="bi bi-chevron-down" style={{ fontSize: '11px', color: 'var(--text-muted)' }} />
+              </Dropdown.Toggle>
+
+              <Dropdown.Menu className="shadow-sm border-0" style={{ minWidth: '210px', borderRadius: '12px', padding: '6px' }}>
+                <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border-light)', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>{user.name}</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{user.email}</div>
+                  <span className={`badge-pill ${rm.cls} mt-2`}><i className={`bi ${rm.icon}`} />{rm.label}</span>
+                </div>
+                <Dropdown.Item
+                  onClick={() => setShowPasswordModal(true)}
+                  style={{ borderRadius: '8px', fontSize: '0.82rem', padding: '8px 12px' }}
+                >
+                  <i className="bi bi-key me-2 text-primary" />Change Password
+                </Dropdown.Item>
+                <Dropdown.Divider />
+                <Dropdown.Item
+                  onClick={logout}
+                  className="text-danger"
+                  style={{ borderRadius: '8px', fontSize: '0.82rem', padding: '8px 12px' }}
+                >
+                  <i className="bi bi-box-arrow-right me-2" />Logout
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
+          )}
+        </div>
+      </nav>
 
       {/* Change Password Modal */}
       <Modal show={showPasswordModal} onHide={() => setShowPasswordModal(false)} centered>
-        <Modal.Header closeButton className="bg-light">
-          <Modal.Title className="h6 fw-bold"><i className="bi bi-key me-2 text-primary"></i>Change Password</Modal.Title>
+        <Modal.Header closeButton>
+          <Modal.Title className="h6 fw-bold">
+            <i className="bi bi-key me-2 text-primary" />Change Password
+          </Modal.Title>
         </Modal.Header>
         <Form onSubmit={handlePasswordSubmit}>
           <Modal.Body>
-            <Form.Group className="mb-3">
-              <Form.Label className="small fw-semibold">Current Password *</Form.Label>
-              <Form.Control
-                type="password"
-                required
-                value={passwordData.current_password}
-                onChange={(e) => setPasswordData({ ...passwordData, current_password: e.target.value })}
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label className="small fw-semibold">New Password *</Form.Label>
-              <Form.Control
-                type="password"
-                required
-                minLength={6}
-                value={passwordData.new_password}
-                onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label className="small fw-semibold">Confirm New Password *</Form.Label>
-              <Form.Control
-                type="password"
-                required
-                minLength={6}
-                value={passwordData.confirm_password}
-                onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
-              />
-            </Form.Group>
+            {[
+              { label: 'Current Password', key: 'current_password' },
+              { label: 'New Password',     key: 'new_password', min: 6 },
+              { label: 'Confirm Password', key: 'confirm_password', min: 6 },
+            ].map(({ label, key, min }) => (
+              <Form.Group key={key} className="mb-3">
+                <Form.Label>{label} *</Form.Label>
+                <Form.Control
+                  type="password"
+                  required
+                  minLength={min}
+                  value={passwordData[key]}
+                  onChange={(e) => setPasswordData({ ...passwordData, [key]: e.target.value })}
+                />
+              </Form.Group>
+            ))}
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" size="sm" onClick={() => setShowPasswordModal(false)}>Cancel</Button>
-            <Button variant="success" size="sm" type="submit" disabled={loading} className="fw-bold px-3">
-              {loading ? 'Updating...' : 'Update Password'}
-            </Button>
+            <button type="button" className="btn btn-sm btn-secondary" onClick={() => setShowPasswordModal(false)}>
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-sm btn-success fw-bold px-3" disabled={loading}>
+              {loading ? 'Updating…' : 'Update Password'}
+            </button>
           </Modal.Footer>
         </Form>
       </Modal>
+
+      <style>{`
+        .user-menu-toggle:hover {
+          background: var(--surface-card) !important;
+          border-color: var(--emerald) !important;
+        }
+      `}</style>
     </>
   );
 }

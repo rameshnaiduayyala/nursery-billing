@@ -1,6 +1,14 @@
 import React from 'react';
-import { Form, Row, Col, Button, ButtonGroup } from 'react-bootstrap';
 import { getPresetDateRange } from '../../utils/formatters';
+
+const PRESETS = [
+  { key: 'today',      label: 'Today' },
+  { key: 'this_week',  label: 'This Week' },
+  { key: 'this_month', label: 'This Month' },
+  { key: 'last_month', label: 'Last Month' },
+  { key: 'this_year',  label: 'This Year' },
+  { key: 'clear',      label: 'All Time' },
+];
 
 export default function DateRangePicker({ startDate, endDate, onChange, onApply }) {
   const handlePreset = (preset) => {
@@ -10,44 +18,58 @@ export default function DateRangePicker({ startDate, endDate, onChange, onApply 
   };
 
   return (
-    <div className="bg-light p-3 rounded mb-3 border">
-      <Row className="g-2 align-items-center">
-        <Col xs={12} md="auto">
-          <span className="fw-semibold text-secondary small d-block mb-1">Quick Presets:</span>
-          <ButtonGroup size="sm" className="flex-wrap">
-            <Button variant="outline-secondary" onClick={() => handlePreset('today')}>Today</Button>
-            <Button variant="outline-secondary" onClick={() => handlePreset('this_week')}>This Week</Button>
-            <Button variant="outline-secondary" onClick={() => handlePreset('this_month')}>This Month</Button>
-            <Button variant="outline-secondary" onClick={() => handlePreset('last_month')}>Last Month</Button>
-            <Button variant="outline-secondary" onClick={() => handlePreset('this_year')}>This Year</Button>
-            <Button variant="outline-danger" onClick={() => handlePreset('clear')}>All Time</Button>
-          </ButtonGroup>
-        </Col>
+    <div className="filter-bar">
+      {/* Quick Presets */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <span className="form-label" style={{ margin: 0 }}>Quick Presets</span>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          {PRESETS.map((p) => (
+            <button
+              key={p.key}
+              type="button"
+              className={`filter-preset-btn${p.key === 'clear' && !startDate && !endDate ? ' active' : ''}`}
+              onClick={() => handlePreset(p.key)}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-        <Col xs={6} sm={4} md={3} className="ms-auto">
-          <Form.Group>
-            <Form.Label className="small fw-semibold text-secondary mb-1">Start Date</Form.Label>
-            <Form.Control
-              type="date"
-              size="sm"
-              value={startDate || ''}
-              onChange={(e) => onChange(e.target.value, endDate)}
-            />
-          </Form.Group>
-        </Col>
-
-        <Col xs={6} sm={4} md={3}>
-          <Form.Group>
-            <Form.Label className="small fw-semibold text-secondary mb-1">End Date</Form.Label>
-            <Form.Control
-              type="date"
-              size="sm"
-              value={endDate || ''}
-              onChange={(e) => onChange(startDate, e.target.value)}
-            />
-          </Form.Group>
-        </Col>
-      </Row>
+      {/* Date Range */}
+      <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', marginLeft: 'auto', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <label className="form-label" style={{ margin: 0 }}>Start Date</label>
+          <input
+            type="date"
+            className="form-control"
+            style={{ height: '34px', fontSize: '0.82rem', minWidth: '140px' }}
+            value={startDate || ''}
+            onChange={(e) => onChange(e.target.value, endDate)}
+          />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <label className="form-label" style={{ margin: 0 }}>End Date</label>
+          <input
+            type="date"
+            className="form-control"
+            style={{ height: '34px', fontSize: '0.82rem', minWidth: '140px' }}
+            value={endDate || ''}
+            onChange={(e) => onChange(startDate, e.target.value)}
+          />
+        </div>
+        {(startDate || endDate) && (
+          <button
+            type="button"
+            className="filter-preset-btn"
+            style={{ marginBottom: '1px' }}
+            onClick={() => handlePreset('clear')}
+          >
+            <i className="bi bi-x" style={{ marginRight: '3px' }} />
+            Clear
+          </button>
+        )}
+      </div>
     </div>
   );
 }

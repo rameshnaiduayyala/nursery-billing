@@ -10,35 +10,60 @@ const api = axios.create({
   timeout: 30000, // 30s global timeout
 });
 
-// ── Module-level token cache: read from localStorage once per session ──
-// Updated by setApiToken() which is called on login/logout.
+// ── Module-level token cache ──
 let _cachedToken = localStorage.getItem('nursery_token') || null;
 
 export function setApiToken(token) {
   _cachedToken = token || null;
 }
 
-// Request Interceptor: Attach cached auth token
+// ── Global Loading Listener System ──
+let _activeRequests = 0;
+const _listeners = new Set();
+
+function notifyListeners() {
+  const isLoading = _activeRequests > 0;
+  _listeners.forEach((fn) => fn(isLoading, _activeRequests));
+}
+
+export function subscribeLoading(fn) {
+  _listeners.add(fn);
+  return () => _listeners.delete(fn);
+}
+
+// Request Interceptor: Attach token + track active requests
 api.interceptors.request.use(
   (config) => {
     if (_cachedToken) {
       config.headers.Authorization = `Bearer ${_cachedToken}`;
     }
+    _activeRequests++;
+    notifyListeners();
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    _activeRequests = Math.max(0, _activeRequests - 1);
+    notifyListeners();
+    return Promise.reject(error);
+  }
 );
 
-// Response Interceptor: Extract data and handle errors
+// Response Interceptor: Extract data + track completed requests
 api.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    _activeRequests = Math.max(0, _activeRequests - 1);
+    notifyListeners();
+    return response.data;
+  },
   (error) => {
-    // Auto-logout on 401 Unauthorized (token expired / invalid)
+    _activeRequests = Math.max(0, _activeRequests - 1);
+    notifyListeners();
+
+    // Auto-logout on 401 Unauthorized
     if (error.response?.status === 401) {
       _cachedToken = null;
       localStorage.removeItem('nursery_token');
       localStorage.removeItem('nursery_user');
-      // Redirect to login without React Router (works outside component tree)
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }

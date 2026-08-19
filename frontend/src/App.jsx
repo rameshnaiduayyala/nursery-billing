@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import MainLayout from './components/Layout/MainLayout';
+import GlobalLoadingBar from './components/Common/GlobalLoadingBar';
 
 // ── Route-level code splitting: each page loads only when navigated to ──
 const Login                = lazy(() => import('./pages/Login'));
@@ -59,6 +60,7 @@ function AdminRoute({ children }) {
 function App() {
   return (
     <ToastProvider>
+      <GlobalLoadingBar />
       <AuthProvider>
         <BrowserRouter>
           <Routes>

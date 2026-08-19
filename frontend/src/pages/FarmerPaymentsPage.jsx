@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, Table, Button, Form, Modal, Row, Col, Badge, Spinner, InputGroup } from 'react-bootstrap';
+import { useReactToPrint } from 'react-to-print';
 import farmerService from '../services/farmerService';
 import transactionService from '../services/transactionService';
 import PageHeader from '../components/Common/PageHeader';
 import DeleteConfirmModal from '../components/Common/DeleteConfirmModal';
+import PrintLayout, { pTable, pTH, pTD, pTDRight, pAmt } from '../components/Common/PrintLayout';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { formatCurrency, formatDate, dateToInput } from '../utils/formatters';
@@ -15,6 +17,9 @@ export default function FarmerPaymentsPage() {
   const [transactions, setTransactions] = useState([]);
   const [farmers, setFarmers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [printLoading, setPrintLoading] = useState(false);
+  const [allForPrint, setAllForPrint] = useState([]);
+  const printRef = useRef(null);
 
   // Search & Filter
   const [search, setSearch] = useState('');
@@ -188,17 +193,40 @@ export default function FarmerPaymentsPage() {
     }
   };
 
+  /* ── Print handlers ── */
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `Gangadhara_FarmerPayments_${new Date().toISOString().slice(0,10)}`,
+    onBeforePrint: async () => {
+      try {
+        setPrintLoading(true);
+        const res = await transactionService.getAll({ party_type: 'FARMER', search, start_date: startDate, end_date: endDate, limit: 9999 });
+        setAllForPrint(res.success ? (res.data?.items || []) : transactions);
+      } catch { setAllForPrint(transactions); } finally { setPrintLoading(false); }
+    },
+  });
+
+  const printData = allForPrint.length > 0 ? allForPrint : transactions;
+  const totalPurchases = printData.filter(t => t.transaction_type === 'PURCHASE').reduce((s,t) => s + Number(t.amount), 0);
+  const totalPayments  = printData.filter(t => t.transaction_type === 'FARMER_PAYMENT').reduce((s,t) => s + Number(t.amount), 0);
+
   return (
     <div>
       <PageHeader
         title="Farmer Payments & Purchases"
+        icon="bi-flower2"
         subtitle="Record plant bulk purchases and payments made to farmers"
         actions={
-          canCreate && (
-            <Button variant="success" size="sm" className="fw-bold" onClick={handleOpenAddModal}>
-              <i className="bi bi-plus-lg me-1"></i> + Farmer Payment / Purchase
-            </Button>
-          )
+          <>
+            {canCreate && (
+              <Button variant="success" size="sm" className="fw-bold" onClick={handleOpenAddModal}>
+                <i className="bi bi-plus-lg me-1"></i> Add
+              </Button>
+            )}
+            <button className="btn btn-sm btn-outline-primary" onClick={handlePrint} disabled={printLoading}>
+              {printLoading ? <><span className="spinner-border spinner-border-sm me-1" />Preparing…</> : <><i className="bi bi-printer-fill me-1" />Print</>}
+            </button>
+          </>
         }
       />
 
@@ -429,6 +457,57 @@ export default function FarmerPaymentsPage() {
         loading={deleteLoading}
         message={`Are you sure you want to delete transaction for "${deleteTarget?.party_name}" of ${formatCurrency(deleteTarget?.amount)}?`}
       />
+
+      {/* Hidden printable document */}
+      <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
+        <PrintLayout
+          ref={printRef}
+          title="Farmer Payments & Purchases"
+          subtitle="Plant purchase and payment transactions with farmers"
+          meta={[
+            startDate ? { label: 'From', value: formatDate(startDate) } : { label: 'Period', value: 'All Time' },
+            endDate   ? { label: 'To',   value: formatDate(endDate) }   : null,
+          ].filter(Boolean)}
+          summary={[
+            { label: 'Plant Purchases', value: formatCurrency(totalPurchases), color: 'red' },
+            { label: 'Payments Made',   value: formatCurrency(totalPayments),  color: 'green' },
+            { label: 'Total Records',   value: printData.length,               color: 'neutral' },
+          ]}
+          landscape
+        >
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10.5px' }}>
+            <thead>
+              <tr>
+                {['#', 'Date', 'Farmer Name', 'Type', 'Amount', 'Mode', 'Remarks'].map((h, i) => (
+                  <th key={i} style={{ ...pTH, textAlign: ['Amount'].includes(h) ? 'right' : 'left' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {printData.length === 0 ? (
+                <tr><td colSpan={7} style={{ ...pTD, textAlign: 'center', color: '#94a3b8' }}>No records.</td></tr>
+              ) : printData.map((tx, i) => (
+                <tr key={tx.id} style={{ background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                  <td style={pTD}>{i + 1}</td>
+                  <td style={pTD}>{formatDate(tx.transaction_date)}</td>
+                  <td style={{ ...pTD, fontWeight: 600 }}>{tx.party_name}</td>
+                  <td style={pTD}>{tx.transaction_type === 'PURCHASE' ? 'Plant Purchase' : 'Farmer Payment'}</td>
+                  <td style={{ ...pTDRight, ...pAmt(tx.transaction_type !== 'PURCHASE') }}>{formatCurrency(tx.amount)}</td>
+                  <td style={pTD}>{tx.payment_mode}</td>
+                  <td style={{ ...pTD, color: '#64748b' }}>{tx.remarks || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr style={{ background: '#f0fdf4', fontWeight: 800 }}>
+                <td colSpan={4} style={{ ...pTD, textAlign: 'right' }}>TOTAL</td>
+                <td style={{ ...pTDRight, color: '#0f172a' }}>{formatCurrency(totalPurchases + totalPayments)}</td>
+                <td colSpan={2} style={pTD} />
+              </tr>
+            </tfoot>
+          </table>
+        </PrintLayout>
+      </div>
     </div>
   );
 }

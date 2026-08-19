@@ -25,6 +25,10 @@ function getInputData() {
 }
 
 function autoSeedAdminIfEmpty($pdo) {
+    static $seeded = false;
+    if ($seeded) return; // Only run once per PHP process
+    $seeded = true;
+
     try {
         // Seed default Admin if missing
         $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM users WHERE LOWER(email) = 'admin@nursery.com'");
@@ -74,7 +78,7 @@ function requireAuth($pdo) {
     }
 
     // 2. Check Authorization Header (Bearer token simulated as user_ID)
-    $headers = getallheaders();
+    $headers = function_exists('getallheaders') ? getallheaders() : [];
     $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
     if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
         $token = trim($matches[1]);

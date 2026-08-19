@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, Table, Button, Form, Modal, Row, Col, Badge, Spinner, InputGroup } from 'react-bootstrap';
+import { useReactToPrint } from 'react-to-print';
 import customerService from '../services/customerService';
 import transactionService from '../services/transactionService';
 import PageHeader from '../components/Common/PageHeader';
 import DeleteConfirmModal from '../components/Common/DeleteConfirmModal';
+import PrintLayout, { pTH, pTD, pTDRight, pAmt } from '../components/Common/PrintLayout';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { formatCurrency, formatDate, dateToInput } from '../utils/formatters';
@@ -15,6 +17,9 @@ export default function SalesReceiptsPage() {
   const [transactions, setTransactions] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [printLoading, setPrintLoading] = useState(false);
+  const [allForPrint, setAllForPrint] = useState([]);
+  const printRef = useRef(null);
 
   // Search & Filter
   const [search, setSearch] = useState('');
@@ -192,17 +197,39 @@ export default function SalesReceiptsPage() {
     }
   };
 
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `Gangadhara_Sales_${new Date().toISOString().slice(0,10)}`,
+    onBeforePrint: async () => {
+      try {
+        setPrintLoading(true);
+        const res = await transactionService.getAll({ party_type: 'CUSTOMER', search, start_date: startDate, end_date: endDate, limit: 9999 });
+        setAllForPrint(res.success ? (res.data?.items || []) : transactions);
+      } catch { setAllForPrint(transactions); } finally { setPrintLoading(false); }
+    },
+  });
+
+  const printData = allForPrint.length > 0 ? allForPrint : transactions;
+  const totalSales    = printData.filter(t => t.transaction_type === 'SALE').reduce((s,t) => s + Number(t.amount), 0);
+  const totalReceipts = printData.filter(t => t.transaction_type === 'CUSTOMER_RECEIPT').reduce((s,t) => s + Number(t.amount), 0);
+
   return (
     <div>
       <PageHeader
         title="Sales & Customer Receipts"
+        icon="bi-cart-check-fill"
         subtitle="Record plant sales to customers/exporters and track receipts"
         actions={
-          canCreate && (
-            <Button variant="success" size="sm" className="fw-bold" onClick={handleOpenAddModal}>
-              <i className="bi bi-plus-lg me-1"></i> + Sale / Receipt
-            </Button>
-          )
+          <>
+            {canCreate && (
+              <Button variant="success" size="sm" className="fw-bold" onClick={handleOpenAddModal}>
+                <i className="bi bi-plus-lg me-1"></i> Add
+              </Button>
+            )}
+            <button className="btn btn-sm btn-outline-primary" onClick={handlePrint} disabled={printLoading}>
+              {printLoading ? <><span className="spinner-border spinner-border-sm me-1" />Preparing…</> : <><i className="bi bi-printer-fill me-1" />Print</>}
+            </button>
+          </>
         }
       />
 
@@ -453,6 +480,55 @@ export default function SalesReceiptsPage() {
         loading={deleteLoading}
         message={`Are you sure you want to delete transaction for "${deleteTarget?.party_name}" of ${formatCurrency(deleteTarget?.amount)}?`}
       />
+
+      {/* Hidden printable document */}
+      <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
+        <PrintLayout
+          ref={printRef}
+          title="Sales & Customer Receipts"
+          subtitle="Plant sales and customer receipt transactions"
+          meta={[
+            startDate ? { label: 'From', value: formatDate(startDate) } : { label: 'Period', value: 'All Time' },
+            endDate   ? { label: 'To',   value: formatDate(endDate) }   : null,
+          ].filter(Boolean)}
+          summary={[
+            { label: 'Total Sales',    value: formatCurrency(totalSales),    color: 'green' },
+            { label: 'Total Receipts', value: formatCurrency(totalReceipts), color: 'green' },
+            { label: 'Records',        value: printData.length },
+          ]}
+          landscape
+        >
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10.5px' }}>
+            <thead>
+              <tr>
+                {['#','Date','Customer','Type','Amount','Mode','Remarks'].map((h,i) => (
+                  <th key={i} style={{ ...pTH, textAlign: h === 'Amount' ? 'right' : 'left' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {printData.map((tx, i) => (
+                <tr key={tx.id} style={{ background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                  <td style={pTD}>{i + 1}</td>
+                  <td style={pTD}>{formatDate(tx.transaction_date)}</td>
+                  <td style={{ ...pTD, fontWeight: 600 }}>{tx.party_name}</td>
+                  <td style={pTD}>{tx.transaction_type === 'SALE' ? 'Plant Sale' : 'Customer Receipt'}</td>
+                  <td style={{ ...pTDRight, ...pAmt(true) }}>{formatCurrency(tx.amount)}</td>
+                  <td style={pTD}>{tx.payment_mode}</td>
+                  <td style={{ ...pTD, color: '#64748b' }}>{tx.remarks || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr style={{ background: '#f0fdf4', fontWeight: 800 }}>
+                <td colSpan={4} style={{ ...pTD, textAlign: 'right' }}>TOTAL</td>
+                <td style={{ ...pTDRight, color: '#059669' }}>{formatCurrency(totalSales + totalReceipts)}</td>
+                <td colSpan={2} style={pTD} />
+              </tr>
+            </tfoot>
+          </table>
+        </PrintLayout>
+      </div>
     </div>
   );
 }

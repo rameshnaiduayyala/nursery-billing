@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, Table, Button, Form, Modal, Row, Col, Badge, Spinner, InputGroup } from 'react-bootstrap';
+import { useReactToPrint } from 'react-to-print';
 import expenseService from '../../services/expenseService';
 import DateRangePicker from '../../components/Common/DateRangePicker';
 import PageHeader from '../../components/Common/PageHeader';
 import DeleteConfirmModal from '../../components/Common/DeleteConfirmModal';
 import StatCard from '../../components/Common/StatCard';
+import PrintLayout, { pTH, pTD, pTDRight, pAmt } from '../../components/Common/PrintLayout';
 import { useToast } from '../../context/ToastContext';
 import { formatCurrency, formatDate, dateToInput } from '../../utils/formatters';
 import { exportToCsv } from '../../utils/exportCsv';
@@ -20,6 +22,8 @@ export default function ExpensesPage() {
   const [expenses, setExpenses] = useState([]);
   const [totals, setTotals] = useState({ total_amount: 0, travel_total: 0, fuel_total: 0, transport_total: 0 });
   const [loading, setLoading] = useState(true);
+  const [printLoading, setPrintLoading] = useState(false);
+  const printRef = useRef(null);
 
   // Filters
   const [startDate, setStartDate] = useState('');
@@ -160,18 +164,32 @@ export default function ExpensesPage() {
     exportToCsv('gangadhara_expenses', expenses, headers);
   };
 
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: `Gangadhara_Expenses_${new Date().toISOString().slice(0,10)}`,
+    onBeforePrint: async () => {
+      setPrintLoading(true);
+      await fetchExpenses();
+      setPrintLoading(false);
+    },
+  });
+
   return (
     <div>
       <PageHeader
         title="Business & Transport Expenses"
+        icon="bi-truck"
         subtitle="Track travel, fuel, loading, unloading, labour, packing and vehicle expenses"
         actions={
           <>
-            <Button variant="outline-secondary" size="sm" onClick={handleExportCsv}>
-              <i className="bi bi-download me-1"></i> Export CSV
-            </Button>
+            <button className="btn btn-sm btn-outline-secondary" onClick={handleExportCsv}>
+              <i className="bi bi-download me-1" /> Export CSV
+            </button>
+            <button className="btn btn-sm btn-outline-primary" onClick={handlePrint} disabled={printLoading}>
+              {printLoading ? <><span className="spinner-border spinner-border-sm me-1" />Preparing…</> : <><i className="bi bi-printer-fill me-1" />Print</>}
+            </button>
             <Button variant="danger" size="sm" className="fw-bold" onClick={handleOpenAdd}>
-              <i className="bi bi-plus-lg me-1"></i> + Expense
+              <i className="bi bi-plus-lg me-1"></i> Add Expense
             </Button>
           </>
         }
@@ -383,6 +401,54 @@ export default function ExpensesPage() {
         loading={deleteLoading}
         message={`Are you sure you want to delete this expense of ${formatCurrency(deleteTarget?.amount)}?`}
       />
+
+      {/* Hidden printable document */}
+      <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
+        <PrintLayout
+          ref={printRef}
+          title="Business & Transport Expenses"
+          subtitle="Categorized expense report"
+          meta={[
+            startDate ? { label: 'From', value: formatDate(startDate) } : { label: 'Period', value: 'All Time' },
+            endDate   ? { label: 'To',   value: formatDate(endDate) }   : null,
+            expenseTypeFilter ? { label: 'Category', value: expenseTypeFilter } : null,
+          ].filter(Boolean)}
+          summary={[
+            { label: 'Total Expenses', value: formatCurrency(totals.total_amount), color: 'red' },
+            { label: 'Records',        value: expenses.length },
+          ]}
+        >
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10.5px' }}>
+            <thead>
+              <tr>
+                {['#','Date','Category','Description','Amount','Mode','Remarks'].map((h,i) => (
+                  <th key={i} style={{ ...pTH, textAlign: h === 'Amount' ? 'right' : 'left' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {expenses.map((exp, i) => (
+                <tr key={exp.id} style={{ background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                  <td style={pTD}>{i + 1}</td>
+                  <td style={pTD}>{formatDate(exp.expense_date)}</td>
+                  <td style={{ ...pTD, fontWeight: 600 }}>{exp.expense_type}</td>
+                  <td style={pTD}>{exp.description || '—'}</td>
+                  <td style={{ ...pTDRight, ...pAmt(false) }}>{formatCurrency(exp.amount)}</td>
+                  <td style={pTD}>{exp.payment_mode}</td>
+                  <td style={{ ...pTD, color: '#64748b' }}>{exp.remarks || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr style={{ background: '#fef2f2', fontWeight: 800 }}>
+                <td colSpan={4} style={{ ...pTD, textAlign: 'right' }}>TOTAL</td>
+                <td style={{ ...pTDRight, color: '#dc2626' }}>{formatCurrency(totals.total_amount)}</td>
+                <td colSpan={2} style={pTD} />
+              </tr>
+            </tfoot>
+          </table>
+        </PrintLayout>
+      </div>
     </div>
   );
 }

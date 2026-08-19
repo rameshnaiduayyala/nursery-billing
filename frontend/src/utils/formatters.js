@@ -1,14 +1,19 @@
+// ── Cached Intl formatters (created once, reused on every call) ──
+const _currencyFmtDecimals = new Intl.NumberFormat('en-IN', {
+  style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2,
+});
+const _currencyFmtNoDecimals = new Intl.NumberFormat('en-IN', {
+  style: 'currency', currency: 'INR', minimumFractionDigits: 0, maximumFractionDigits: 0,
+});
+
 /**
  * Format currency in Indian Rupees format (e.g., ₹1,50,000.00)
  */
 export function formatCurrency(amount, includeDecimals = true) {
   const numeric = Number(amount) || 0;
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: includeDecimals ? 2 : 0,
-    maximumFractionDigits: includeDecimals ? 2 : 0
-  }).format(numeric);
+  return includeDecimals
+    ? _currencyFmtDecimals.format(numeric)
+    : _currencyFmtNoDecimals.format(numeric);
 }
 
 /**

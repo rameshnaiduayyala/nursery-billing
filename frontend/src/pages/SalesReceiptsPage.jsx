@@ -3,6 +3,7 @@ import { Card, Table, Button, Form, Modal, Row, Col, Badge, Spinner, InputGroup 
 import customerService from '../services/customerService';
 import transactionService from '../services/transactionService';
 import PageHeader from '../components/Common/PageHeader';
+import DeleteConfirmModal from '../components/Common/DeleteConfirmModal';
 import { useToast } from '../context/ToastContext';
 import { formatCurrency, formatDate, dateToInput } from '../utils/formatters';
 
@@ -20,8 +21,13 @@ export default function SalesReceiptsPage() {
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
+  const [selectedTx, setSelectedTx] = useState(null);
   const [isNewCustomer, setIsNewCustomer] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Delete modal
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     transaction_date: dateToInput(),
@@ -61,7 +67,8 @@ export default function SalesReceiptsPage() {
     fetchData();
   }, [search, startDate, endDate]);
 
-  const handleOpenModal = () => {
+  const handleOpenAddModal = () => {
+    setSelectedTx(null);
     setFormData({
       transaction_date: dateToInput(),
       customer_id: customers.length ? customers[0].id : '',
@@ -71,6 +78,23 @@ export default function SalesReceiptsPage() {
       amount: '',
       payment_mode: 'Bank Transfer',
       remarks: ''
+    });
+    setIsNewCustomer(false);
+    setShowModal(true);
+  };
+
+  const handleOpenEditModal = (tx) => {
+    setSelectedTx(tx);
+    const mType = tx.transaction_type === 'SALE' ? 'Plant Sale' : 'Balance Received';
+    setFormData({
+      transaction_date: tx.transaction_date || dateToInput(),
+      customer_id: tx.party_id || '',
+      customer_name: tx.party_name || '',
+      customer_type: tx.customer_type || 'CUSTOMER',
+      money_type: mType,
+      amount: tx.amount || '',
+      payment_mode: tx.payment_mode || 'Bank Transfer',
+      remarks: tx.remarks || ''
     });
     setIsNewCustomer(false);
     setShowModal(true);
@@ -110,21 +134,35 @@ export default function SalesReceiptsPage() {
 
     try {
       setSubmitting(true);
-      const res = await transactionService.create({
-        transaction_date: formData.transaction_date,
-        party_type: 'CUSTOMER',
-        party_id: isNewCustomer ? 0 : formData.customer_id,
-        party_name: isNewCustomer ? formData.customer_name.trim() : '',
-        customer_type: formData.customer_type,
-        transaction_type: txType,
-        money_type: formData.money_type,
-        amount: amountNum,
-        payment_mode: formData.payment_mode,
-        remarks: formData.remarks
-      });
+      let res;
+      if (selectedTx && selectedTx.id) {
+        res = await transactionService.update({
+          id: selectedTx.id,
+          transaction_date: formData.transaction_date,
+          party_type: 'CUSTOMER',
+          party_id: formData.customer_id,
+          transaction_type: txType,
+          amount: amountNum,
+          payment_mode: formData.payment_mode,
+          remarks: formData.remarks
+        });
+      } else {
+        res = await transactionService.create({
+          transaction_date: formData.transaction_date,
+          party_type: 'CUSTOMER',
+          party_id: isNewCustomer ? 0 : formData.customer_id,
+          party_name: isNewCustomer ? formData.customer_name.trim() : '',
+          customer_type: formData.customer_type,
+          transaction_type: txType,
+          money_type: formData.money_type,
+          amount: amountNum,
+          payment_mode: formData.payment_mode,
+          remarks: formData.remarks
+        });
+      }
 
       if (res.success) {
-        showToast('Sale / Receipt saved successfully!', 'success');
+        showToast(selectedTx ? 'Transaction updated successfully!' : 'Sale / Receipt saved successfully!', 'success');
         setShowModal(false);
         fetchData();
       }
@@ -135,13 +173,30 @@ export default function SalesReceiptsPage() {
     }
   };
 
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    try {
+      setDeleteLoading(true);
+      const res = await transactionService.delete(deleteTarget.id);
+      if (res.success) {
+        showToast('Sale / Receipt deleted successfully!', 'success');
+        setDeleteTarget(null);
+        fetchData();
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to delete transaction', 'danger');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   return (
     <div>
       <PageHeader
         title="Sales & Customer Receipts"
         subtitle="Record plant sales to customers/exporters and track receipts"
         actions={
-          <Button variant="success" size="sm" className="fw-bold" onClick={handleOpenModal}>
+          <Button variant="success" size="sm" className="fw-bold" onClick={handleOpenAddModal}>
             <i className="bi bi-plus-lg me-1"></i> + Sale / Receipt
           </Button>
         }
@@ -196,6 +251,7 @@ export default function SalesReceiptsPage() {
                   <th className="text-end">Amount</th>
                   <th>Payment Mode</th>
                   <th>Remarks</th>
+                  <th className="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -221,11 +277,29 @@ export default function SalesReceiptsPage() {
                       </td>
                       <td>{tx.payment_mode}</td>
                       <td className="text-muted">{tx.remarks || '-'}</td>
+                      <td className="text-center">
+                        <div className="btn-group btn-group-sm">
+                          <Button
+                            variant="outline-secondary"
+                            title="Edit Transaction"
+                            onClick={() => handleOpenEditModal(tx)}
+                          >
+                            <i className="bi bi-pencil"></i>
+                          </Button>
+                          <Button
+                            variant="outline-danger"
+                            title="Delete Transaction"
+                            onClick={() => setDeleteTarget(tx)}
+                          >
+                            <i className="bi bi-trash"></i>
+                          </Button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="6" className="text-center text-muted py-4">
+                    <td colSpan="7" className="text-center text-muted py-4">
                       No sales or receipts found. Click <strong>+ Sale / Receipt</strong> to record one.
                     </td>
                   </tr>
@@ -236,10 +310,12 @@ export default function SalesReceiptsPage() {
         </Card.Body>
       </Card>
 
+      {/* Add/Edit Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>
         <Modal.Header closeButton className="bg-light">
           <Modal.Title className="h6 fw-bold text-success">
-            <i className="bi bi-cart-check me-2"></i>ADD SALE / CUSTOMER RECEIPT
+            <i className="bi bi-cart-check me-2"></i>
+            {selectedTx ? 'EDIT SALE / CUSTOMER RECEIPT' : 'ADD SALE / CUSTOMER RECEIPT'}
           </Modal.Title>
         </Modal.Header>
         <Form onSubmit={handleSubmit}>
@@ -261,7 +337,7 @@ export default function SalesReceiptsPage() {
                   {customers.map((c) => (
                     <option key={c.id} value={c.id}>{c.name} ({c.type} - {c.city || 'City N/A'})</option>
                   ))}
-                  <option value="NEW">➕ Direct Entry (Add New Customer)</option>
+                  {!selectedTx && <option value="NEW">➕ Direct Entry (Add New Customer)</option>}
                 </Form.Select>
               ) : (
                 <div className="border p-2 rounded bg-light">
@@ -354,11 +430,19 @@ export default function SalesReceiptsPage() {
           <Modal.Footer>
             <Button variant="secondary" size="sm" onClick={() => setShowModal(false)}>Cancel</Button>
             <Button variant="success" size="sm" type="submit" disabled={submitting} className="fw-bold px-4">
-              {submitting ? <Spinner size="sm" animation="border" /> : 'Save Sale / Receipt'}
+              {submitting ? <Spinner size="sm" animation="border" /> : (selectedTx ? 'Update Transaction' : 'Save Sale / Receipt')}
             </Button>
           </Modal.Footer>
         </Form>
       </Modal>
+
+      <DeleteConfirmModal
+        show={!!deleteTarget}
+        onHide={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+        loading={deleteLoading}
+        message={`Are you sure you want to delete transaction for "${deleteTarget?.party_name}" of ${formatCurrency(deleteTarget?.amount)}?`}
+      />
     </div>
   );
 }

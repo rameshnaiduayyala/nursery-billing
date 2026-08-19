@@ -12,6 +12,7 @@ const navItems = [
   { label: 'Sales / Receipts', path: '/sales', icon: 'bi-cart-check-fill' },
   { label: 'Expenses', path: '/expenses', icon: 'bi-truck' },
   { label: 'Transactions', path: '/transactions', icon: 'bi-journal-text' },
+  { label: 'Payment Reminders', path: '/reminders', icon: 'bi-bell-fill' },
   { label: 'Profit & Loss', path: '/profit-loss', icon: 'bi-calculator-fill' },
   { label: 'Reports', path: '/reports', icon: 'bi-file-earmark-bar-graph-fill' },
 ];

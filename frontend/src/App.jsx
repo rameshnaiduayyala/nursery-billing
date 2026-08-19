@@ -14,6 +14,7 @@ import CustomerLedger from './pages/customers/CustomerLedger';
 import SalesReceiptsPage from './pages/SalesReceiptsPage';
 import ExpensesPage from './pages/expenses/ExpensesPage';
 import TransactionsPage from './pages/transactions/TransactionsPage';
+import RemindersPage from './pages/RemindersPage';
 import ProfitLossPage from './pages/ProfitLossPage';
 import ReportsPage from './pages/reports/ReportsPage';
 import { Spinner } from 'react-bootstrap';
@@ -117,6 +118,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <TransactionsPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/reminders"
+              element={
+                <ProtectedRoute>
+                  <RemindersPage />
                 </ProtectedRoute>
               }
             />

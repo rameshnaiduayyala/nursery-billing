@@ -3,6 +3,7 @@ import { Card, Table, Button, Form, Modal, Row, Col, Badge, Spinner, InputGroup 
 import farmerService from '../services/farmerService';
 import transactionService from '../services/transactionService';
 import PageHeader from '../components/Common/PageHeader';
+import DeleteConfirmModal from '../components/Common/DeleteConfirmModal';
 import { useToast } from '../context/ToastContext';
 import { formatCurrency, formatDate, dateToInput } from '../utils/formatters';
 
@@ -20,8 +21,13 @@ export default function FarmerPaymentsPage() {
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
+  const [selectedTx, setSelectedTx] = useState(null);
   const [isNewFarmer, setIsNewFarmer] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Delete modal
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     transaction_date: dateToInput(),
@@ -60,7 +66,8 @@ export default function FarmerPaymentsPage() {
     fetchData();
   }, [search, startDate, endDate]);
 
-  const handleOpenModal = () => {
+  const handleOpenAddModal = () => {
+    setSelectedTx(null);
     setFormData({
       transaction_date: dateToInput(),
       farmer_id: farmers.length ? farmers[0].id : '',
@@ -69,6 +76,22 @@ export default function FarmerPaymentsPage() {
       amount: '',
       payment_mode: 'Bank Transfer',
       remarks: ''
+    });
+    setIsNewFarmer(false);
+    setShowModal(true);
+  };
+
+  const handleOpenEditModal = (tx) => {
+    setSelectedTx(tx);
+    const mType = tx.transaction_type === 'PURCHASE' ? 'Plant Purchase' : 'Balance Payment';
+    setFormData({
+      transaction_date: tx.transaction_date || dateToInput(),
+      farmer_id: tx.party_id || '',
+      farmer_name: tx.party_name || '',
+      money_type: mType,
+      amount: tx.amount || '',
+      payment_mode: tx.payment_mode || 'Bank Transfer',
+      remarks: tx.remarks || ''
     });
     setIsNewFarmer(false);
     setShowModal(true);
@@ -108,20 +131,34 @@ export default function FarmerPaymentsPage() {
 
     try {
       setSubmitting(true);
-      const res = await transactionService.create({
-        transaction_date: formData.transaction_date,
-        party_type: 'FARMER',
-        party_id: isNewFarmer ? 0 : formData.farmer_id,
-        party_name: isNewFarmer ? formData.farmer_name.trim() : '',
-        transaction_type: txType,
-        money_type: formData.money_type,
-        amount: amountNum,
-        payment_mode: formData.payment_mode,
-        remarks: formData.remarks
-      });
+      let res;
+      if (selectedTx && selectedTx.id) {
+        res = await transactionService.update({
+          id: selectedTx.id,
+          transaction_date: formData.transaction_date,
+          party_type: 'FARMER',
+          party_id: formData.farmer_id,
+          transaction_type: txType,
+          amount: amountNum,
+          payment_mode: formData.payment_mode,
+          remarks: formData.remarks
+        });
+      } else {
+        res = await transactionService.create({
+          transaction_date: formData.transaction_date,
+          party_type: 'FARMER',
+          party_id: isNewFarmer ? 0 : formData.farmer_id,
+          party_name: isNewFarmer ? formData.farmer_name.trim() : '',
+          transaction_type: txType,
+          money_type: formData.money_type,
+          amount: amountNum,
+          payment_mode: formData.payment_mode,
+          remarks: formData.remarks
+        });
+      }
 
       if (res.success) {
-        showToast('Farmer transaction saved successfully!', 'success');
+        showToast(selectedTx ? 'Transaction updated successfully!' : 'Farmer transaction saved successfully!', 'success');
         setShowModal(false);
         fetchData();
       }
@@ -132,13 +169,30 @@ export default function FarmerPaymentsPage() {
     }
   };
 
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    try {
+      setDeleteLoading(true);
+      const res = await transactionService.delete(deleteTarget.id);
+      if (res.success) {
+        showToast('Farmer transaction deleted successfully!', 'success');
+        setDeleteTarget(null);
+        fetchData();
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to delete transaction', 'danger');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   return (
     <div>
       <PageHeader
         title="Farmer Payments & Purchases"
         subtitle="Record plant bulk purchases and payments made to farmers"
         actions={
-          <Button variant="success" size="sm" className="fw-bold" onClick={handleOpenModal}>
+          <Button variant="success" size="sm" className="fw-bold" onClick={handleOpenAddModal}>
             <i className="bi bi-plus-lg me-1"></i> + Farmer Payment / Purchase
           </Button>
         }
@@ -193,6 +247,7 @@ export default function FarmerPaymentsPage() {
                   <th className="text-end">Amount</th>
                   <th>Payment Mode</th>
                   <th>Remarks</th>
+                  <th className="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -211,11 +266,29 @@ export default function FarmerPaymentsPage() {
                       </td>
                       <td>{tx.payment_mode}</td>
                       <td className="text-muted">{tx.remarks || '-'}</td>
+                      <td className="text-center">
+                        <div className="btn-group btn-group-sm">
+                          <Button
+                            variant="outline-secondary"
+                            title="Edit Transaction"
+                            onClick={() => handleOpenEditModal(tx)}
+                          >
+                            <i className="bi bi-pencil"></i>
+                          </Button>
+                          <Button
+                            variant="outline-danger"
+                            title="Delete Transaction"
+                            onClick={() => setDeleteTarget(tx)}
+                          >
+                            <i className="bi bi-trash"></i>
+                          </Button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="6" className="text-center text-muted py-4">
+                    <td colSpan="7" className="text-center text-muted py-4">
                       No farmer transaction records found. Click <strong>+ Farmer Payment / Purchase</strong> to record one.
                     </td>
                   </tr>
@@ -226,10 +299,12 @@ export default function FarmerPaymentsPage() {
         </Card.Body>
       </Card>
 
+      {/* Add/Edit Modal */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>
         <Modal.Header closeButton className="bg-light">
           <Modal.Title className="h6 fw-bold text-success">
-            <i className="bi bi-wallet2 me-2"></i>ADD FARMER PAYMENT / PURCHASE
+            <i className="bi bi-wallet2 me-2"></i>
+            {selectedTx ? 'EDIT FARMER TRANSACTION' : 'ADD FARMER PAYMENT / PURCHASE'}
           </Modal.Title>
         </Modal.Header>
         <Form onSubmit={handleSubmit}>
@@ -251,7 +326,7 @@ export default function FarmerPaymentsPage() {
                   {farmers.map((f) => (
                     <option key={f.id} value={f.id}>{f.name} ({f.location || 'Location N/A'})</option>
                   ))}
-                  <option value="NEW">➕ Direct Entry (Add New Farmer)</option>
+                  {!selectedTx && <option value="NEW">➕ Direct Entry (Add New Farmer)</option>}
                 </Form.Select>
               ) : (
                 <div className="border p-2 rounded bg-light">
@@ -331,11 +406,19 @@ export default function FarmerPaymentsPage() {
           <Modal.Footer>
             <Button variant="secondary" size="sm" onClick={() => setShowModal(false)}>Cancel</Button>
             <Button variant="success" size="sm" type="submit" disabled={submitting} className="fw-bold px-4">
-              {submitting ? <Spinner size="sm" animation="border" /> : 'Save Payment / Purchase'}
+              {submitting ? <Spinner size="sm" animation="border" /> : (selectedTx ? 'Update Transaction' : 'Save Payment / Purchase')}
             </Button>
           </Modal.Footer>
         </Form>
       </Modal>
+
+      <DeleteConfirmModal
+        show={!!deleteTarget}
+        onHide={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+        loading={deleteLoading}
+        message={`Are you sure you want to delete transaction for "${deleteTarget?.party_name}" of ${formatCurrency(deleteTarget?.amount)}?`}
+      />
     </div>
   );
 }

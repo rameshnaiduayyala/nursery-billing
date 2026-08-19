@@ -7,6 +7,7 @@ export const reportService = {
   getFarmersReport: (params = {}) => api.get('/reports/farmers.php', { params }),
   getCustomersReport: (params = {}) => api.get('/reports/customers.php', { params }),
   getProfitLossReport: (params = {}) => api.get('/reports/profit-loss.php', { params }),
+  getRemindersReport: (params = {}) => api.get('/reports/reminders.php', { params }),
 };
 
 export default reportService;

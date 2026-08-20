@@ -8,6 +8,13 @@ cd frontend
 npm install
 npm run dev
 
+## Desktop App (.exe)
+
+cd desktop
+npm install
+npm start        # Run Desktop App in development
+npm run dist     # Build standalone Windows installer (.exe) in desktop/dist-app/
+
 ## Production
 
 npm run build

@@ -7,6 +7,7 @@ import transactionService from '../services/transactionService';
 import PageHeader from '../components/Common/PageHeader';
 import DeleteConfirmModal from '../components/Common/DeleteConfirmModal';
 import PrintLayout, { pTH, pTD, pTDRight, pAmt } from '../components/Common/PrintLayout';
+import ThermalPrintModal from '../components/Common/ThermalPrintModal';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { formatCurrency, formatDate, dateToInput } from '../utils/formatters';
@@ -22,6 +23,7 @@ export default function SalesReceiptsPage() {
   const [loading, setLoading] = useState(true);
   const [printLoading, setPrintLoading] = useState(false);
   const [allForPrint, setAllForPrint] = useState([]);
+  const [thermalTx, setThermalTx] = useState(null);
   const printRef = useRef(null);
 
   // Search & Filter
@@ -453,6 +455,23 @@ export default function SalesReceiptsPage() {
                         {(canEdit || canDelete) && (
                           <td data-label="Actions" className="text-center">
                             <div className="btn-group btn-group-sm">
+                              <Button
+                                variant="outline-success"
+                                title="Thermal BT Print Receipt"
+                                onClick={() => setThermalTx({
+                                  bill_no: `INV-${tx.id}`,
+                                  date: formatDate(tx.transaction_date),
+                                  customer_name: tx.party_name,
+                                  payment_mode: tx.payment_mode,
+                                  total_amount: tx.amount,
+                                  paid_amount: tx.amount,
+                                  items: [
+                                    { plant_name: tx.remarks || (isSale ? 'Plant Purchase' : 'Customer Payment'), quantity: 1, rate: Number(tx.amount), amount: Number(tx.amount) }
+                                  ]
+                                })}
+                              >
+                                <i className="bi bi-printer-fill text-success"></i>
+                              </Button>
                               {canEdit && (
                                 <Button
                                   variant="outline-secondary"
@@ -711,6 +730,13 @@ export default function SalesReceiptsPage() {
           </table>
         </PrintLayout>
       </div>
+
+      {/* Mobile Thermal BT Printer Modal */}
+      <ThermalPrintModal
+        show={!!thermalTx}
+        onHide={() => setThermalTx(null)}
+        receiptData={thermalTx}
+      />
     </div>
   );
 }

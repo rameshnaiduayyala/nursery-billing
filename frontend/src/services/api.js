@@ -1,10 +1,16 @@
 import axios from 'axios';
 
-// API base URL configured for cPanel remote API or local dev override
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://nursery.vanyxglobal.com/api';
+// Dynamic API base URL resolver (supports mobile app server configuration)
+function getResolvedApiBaseUrl() {
+  return (
+    localStorage.getItem('nursery_api_base_url') ||
+    import.meta.env.VITE_API_BASE_URL ||
+    'https://nursery.vanyxglobal.com/api'
+  );
+}
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getResolvedApiBaseUrl(),
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
   timeout: 30000, // 30s global timeout
@@ -31,9 +37,10 @@ export function subscribeLoading(fn) {
   return () => _listeners.delete(fn);
 }
 
-// Request Interceptor: Attach token + track active requests
+// Request Interceptor: Dynamic baseURL + Attach token + track active requests
 api.interceptors.request.use(
   (config) => {
+    config.baseURL = getResolvedApiBaseUrl();
     if (_cachedToken) {
       config.headers.Authorization = `Bearer ${_cachedToken}`;
     }

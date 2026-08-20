@@ -1,9 +1,28 @@
-import React, { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { lazy, Suspense, useEffect } from 'react';
+import { BrowserRouter, HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import MainLayout from './components/Layout/MainLayout';
 import GlobalLoadingBar from './components/Common/GlobalLoadingBar';
+import { initNativeApp, setupAndroidBackButton } from './services/capacitorService';
+
+// Dynamic Router for Web vs Electron / Native File Protocol
+const Router = (window.location.protocol === 'file:' || window.electronAPI) ? HashRouter : BrowserRouter;
+
+// ── Capacitor Native Initializer Component ──
+function NativeAppInitializer() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    initNativeApp();
+    const cleanupBackButton = setupAndroidBackButton(navigate);
+    return () => {
+      if (cleanupBackButton) cleanupBackButton();
+    };
+  }, [navigate]);
+
+  return null;
+}
 
 // ── Route-level code splitting: each page loads only when navigated to ──
 const Login                = lazy(() => import('./pages/Login'));
@@ -62,7 +81,8 @@ function App() {
     <ToastProvider>
       <GlobalLoadingBar />
       <AuthProvider>
-        <BrowserRouter>
+        <Router>
+          <NativeAppInitializer />
           <Routes>
             <Route path="/login" element={<Suspense fallback={<AuthLoader />}><Login /></Suspense>} />
 
@@ -86,7 +106,7 @@ function App() {
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </BrowserRouter>
+        </Router>
       </AuthProvider>
     </ToastProvider>
   );

@@ -96,6 +96,7 @@ export default function TopNavbar({ collapsed, onToggleCollapse, onToggleMobileM
 
         {/* Right side */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+
           {/* Shortcuts button */}
           <button
             className="btn btn-sm btn-outline-secondary d-none d-md-flex align-items-center gap-1"

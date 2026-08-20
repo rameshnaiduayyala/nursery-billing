@@ -117,6 +117,10 @@ export default function Login() {
             </div>
           </Card.Body>
         </Card>
+
+        <div className="text-center mt-3 text-muted small fw-semibold">
+          Developed by <span className="text-success fw-bold">Ramesh Ayyala</span>
+        </div>
       </Container>
     </div>
   );

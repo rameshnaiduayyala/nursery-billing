@@ -220,20 +220,77 @@ export default function ExpensesPage() {
         }
       />
 
-      <Row className="g-3 mb-3">
-        <Col sm={6} md={3}>
-          <StatCard title="Total Travel Expense" value={totals.travel_total} icon="bi-airplane" color="primary" />
-        </Col>
-        <Col sm={6} md={3}>
-          <StatCard title="Total Fuel Expense" value={totals.fuel_total} icon="bi-fuel-pump" color="warning" />
-        </Col>
-        <Col sm={6} md={3}>
-          <StatCard title="Total Transport Expense" value={totals.transport_total} icon="bi-truck" color="info" />
-        </Col>
-        <Col sm={6} md={3}>
-          <StatCard title="Total All Expenses" value={totals.total_amount} icon="bi-wallet2" color="danger" />
-        </Col>
-      </Row>
+      {/* Corporate Dynamic Category Totals Calculation */}
+      {(() => {
+        const catMap = expenses.reduce((acc, exp) => {
+          const cat = exp.expense_type || 'Other';
+          acc[cat] = (acc[cat] || 0) + Number(exp.amount);
+          return acc;
+        }, {});
+
+        const sortedCats = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+        const top1 = sortedCats[0];
+        const top2 = sortedCats[1];
+        const top3 = sortedCats[2];
+
+        return (
+          <>
+            <Row className="g-3 mb-3">
+              <Col sm={6} md={3}>
+                <StatCard
+                  title={top1 ? `Highest: ${top1[0]}` : 'Top Category'}
+                  value={top1 ? top1[1] : 0}
+                  icon="bi-pie-chart-fill"
+                  color="primary"
+                />
+              </Col>
+              <Col sm={6} md={3}>
+                <StatCard
+                  title={top2 ? `2nd: ${top2[0]}` : 'Category #2'}
+                  value={top2 ? top2[1] : 0}
+                  icon="bi-tag-fill"
+                  color="warning"
+                />
+              </Col>
+              <Col sm={6} md={3}>
+                <StatCard
+                  title={top3 ? `3rd: ${top3[0]}` : 'Category #3'}
+                  value={top3 ? top3[1] : 0}
+                  icon="bi-box-seam"
+                  color="info"
+                />
+              </Col>
+              <Col sm={6} md={3}>
+                <StatCard
+                  title="Total All Expenses"
+                  value={totals.total_amount}
+                  icon="bi-wallet2"
+                  color="danger"
+                />
+              </Col>
+            </Row>
+
+            {/* All Categories Spending Pills Bar */}
+            {sortedCats.length > 0 && (
+              <Card className="shadow-sm border-0 rounded-3 mb-3 bg-light">
+                <Card.Body className="py-2 px-3">
+                  <div className="d-flex align-items-center flex-wrap gap-2">
+                    <span className="small text-uppercase text-muted fw-bold me-2" style={{ fontSize: '0.68rem', letterSpacing: '0.5px' }}>
+                      Category Breakdown:
+                    </span>
+                    {sortedCats.map(([catName, amt]) => (
+                      <span key={catName} className="badge bg-white text-dark border px-2 py-1 shadow-sm d-inline-flex align-items-center gap-1" style={{ fontSize: '0.75rem' }}>
+                        <span className="fw-semibold">{catName}:</span>
+                        <span className="text-danger fw-bold">{formatCurrency(amt)}</span>
+                      </span>
+                    ))}
+                  </div>
+                </Card.Body>
+              </Card>
+            )}
+          </>
+        );
+      })()}
 
       <DateRangePicker
         startDate={startDate}

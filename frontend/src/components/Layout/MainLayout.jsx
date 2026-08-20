@@ -45,6 +45,17 @@ export default function MainLayout({ children }) {
             {children}
           </Container>
         </main>
+
+        <footer className="py-3 px-4 border-top bg-white text-muted small mt-auto d-print-none">
+          <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
+            <div>
+              © {new Date().getFullYear()} <strong className="text-dark">Gangadhara Nursery</strong> — All Rights Reserved
+            </div>
+            <div className="fw-semibold" style={{ color: '#059669' }}>
+              Developed by <span className="text-dark fw-bold">Ramesh Ayyala</span>
+            </div>
+          </div>
+        </footer>
       </div>
     </div>
   );

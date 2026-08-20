@@ -5,6 +5,7 @@ import transactionService from '../../services/transactionService';
 import DateRangePicker from '../../components/Common/DateRangePicker';
 import PageHeader from '../../components/Common/PageHeader';
 import DeleteConfirmModal from '../../components/Common/DeleteConfirmModal';
+import StatCard from '../../components/Common/StatCard';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatCurrency, formatDate } from '../../utils/formatters';
@@ -13,15 +14,15 @@ import useDebounce from '../../hooks/useDebounce';
 
 /* ── Transaction type config ─────────────────────────────── */
 const TX_CONFIG = {
-  SALE:             { label: 'Plant Sale',       cls: 'badge-success', inflow: true  },
-  CUSTOMER_RECEIPT: { label: 'Customer Payment', cls: 'badge-info',    inflow: true  },
-  PURCHASE:         { label: 'Plant Purchase',   cls: 'badge-warning', inflow: false },
-  FARMER_PAYMENT:   { label: 'Farmer Payment',   cls: 'badge-purple',  inflow: false },
-  EXPENSE:          { label: 'Expense',          cls: 'badge-danger',  inflow: false },
+  SALE: { label: 'Plant Sale', cls: 'badge-success', inflow: true },
+  CUSTOMER_RECEIPT: { label: 'Customer Payment', cls: 'badge-info', inflow: true },
+  PURCHASE: { label: 'Plant Purchase', cls: 'badge-warning', inflow: false },
+  FARMER_PAYMENT: { label: 'Farmer Payment', cls: 'badge-purple', inflow: false },
+  EXPENSE: { label: 'Expense', cls: 'badge-danger', inflow: false },
 };
 
 const PARTY_BADGE = {
-  FARMER:   'badge-warning',
+  FARMER: 'badge-warning',
   CUSTOMER: 'badge-primary',
 };
 
@@ -30,14 +31,14 @@ const PrintableLedger = React.forwardRef(function PrintableLedger(
   { transactions, startDate, endDate, partyType, transactionType, paymentMode, totalRecords },
   ref
 ) {
-  const totalInflow  = transactions.reduce((s, tx) => TX_CONFIG[tx.transaction_type]?.inflow  ? s + Number(tx.amount) : s, 0);
+  const totalInflow = transactions.reduce((s, tx) => TX_CONFIG[tx.transaction_type]?.inflow ? s + Number(tx.amount) : s, 0);
   const totalOutflow = transactions.reduce((s, tx) => !TX_CONFIG[tx.transaction_type]?.inflow ? s + Number(tx.amount) : s, 0);
 
   const filterDesc = [
     startDate && endDate ? `Period: ${formatDate(startDate)} – ${formatDate(endDate)}` : startDate ? `From: ${formatDate(startDate)}` : endDate ? `To: ${formatDate(endDate)}` : 'Period: All Time',
-    partyType       ? `Party: ${partyType}`            : '',
-    transactionType ? `Type: ${transactionType}`       : '',
-    paymentMode     ? `Payment Mode: ${paymentMode}`   : '',
+    partyType ? `Party: ${partyType}` : '',
+    transactionType ? `Type: ${transactionType}` : '',
+    paymentMode ? `Payment Mode: ${paymentMode}` : '',
   ].filter(Boolean).join('   |   ');
 
   return (
@@ -62,9 +63,9 @@ const PrintableLedger = React.forwardRef(function PrintableLedger(
       {/* Summary totals */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
         {[
-          { label: 'Total Money In',  value: totalInflow,             color: '#059669', bg: '#f0fdf4' },
-          { label: 'Total Money Out', value: totalOutflow,            color: '#dc2626', bg: '#fef2f2' },
-          { label: 'Net Flow',        value: totalInflow - totalOutflow, color: totalInflow >= totalOutflow ? '#059669' : '#dc2626', bg: '#f8fafc' },
+          { label: 'Total Money In', value: totalInflow, color: '#059669', bg: '#f0fdf4' },
+          { label: 'Total Money Out', value: totalOutflow, color: '#dc2626', bg: '#fef2f2' },
+          { label: 'Net Flow', value: totalInflow - totalOutflow, color: totalInflow >= totalOutflow ? '#059669' : '#dc2626', bg: '#f8fafc' },
         ].map((s) => (
           <div key={s.label} style={{ flex: 1, background: s.bg, border: `1px solid ${s.color}22`, borderRadius: '8px', padding: '10px 14px' }}>
             <div style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: '#64748b' }}>{s.label}</div>
@@ -96,9 +97,9 @@ const PrintableLedger = React.forwardRef(function PrintableLedger(
               </td>
             </tr>
           ) : transactions.map((tx, idx) => {
-            const cfg     = TX_CONFIG[tx.transaction_type] ?? { inflow: false };
+            const cfg = TX_CONFIG[tx.transaction_type] ?? { inflow: false };
             const isInflow = cfg.inflow;
-            const rowBg   = idx % 2 === 0 ? '#fff' : '#fafafa';
+            const rowBg = idx % 2 === 0 ? '#fff' : '#fafafa';
             return (
               <tr key={tx.id} style={{ background: rowBg }}>
                 <td style={tdc}>{idx + 1}</td>
@@ -161,28 +162,28 @@ export default function TransactionsPage() {
   const { showToast } = useToast();
   const { canDelete } = useAuth();
 
-  const [transactions, setTransactions]     = useState([]);
-  const [loading, setLoading]               = useState(true);
-  const [printLoading, setPrintLoading]     = useState(false);
-  const [allForPrint, setAllForPrint]       = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [printLoading, setPrintLoading] = useState(false);
+  const [allForPrint, setAllForPrint] = useState([]);
 
   // Filters
-  const [startDate, setStartDate]           = useState('');
-  const [endDate, setEndDate]               = useState('');
-  const [partyType, setPartyType]           = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [partyType, setPartyType] = useState('');
   const [transactionType, setTransactionType] = useState('');
-  const [paymentMode, setPaymentMode]       = useState('');
-  const [search, setSearch]                 = useState('');
+  const [paymentMode, setPaymentMode] = useState('');
+  const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 350);
 
   // Pagination
-  const [page, setPage]         = useState(1);
-  const [limit]                 = useState(25);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(25);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
 
   // Delete
-  const [deleteTarget, setDeleteTarget]   = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Print ref
@@ -266,14 +267,14 @@ export default function TransactionsPage() {
   /* ── CSV export ── */
   const handleExportCsv = () => {
     const headers = [
-      { key: 'id',               label: 'Tx ID' },
+      { key: 'id', label: 'Tx ID' },
       { key: 'transaction_date', label: 'Date' },
-      { key: 'party_name',       label: 'Party Name' },
-      { key: 'party_type',       label: 'Party Type' },
+      { key: 'party_name', label: 'Party Name' },
+      { key: 'party_type', label: 'Party Type' },
       { key: 'transaction_type', label: 'Transaction Type' },
-      { key: 'amount',           label: 'Amount (INR)' },
-      { key: 'payment_mode',     label: 'Payment Mode' },
-      { key: 'remarks',          label: 'Remarks' },
+      { key: 'amount', label: 'Amount (INR)' },
+      { key: 'payment_mode', label: 'Payment Mode' },
+      { key: 'remarks', label: 'Remarks' },
     ];
     exportToCsv('gangadhara_all_transactions', transactions, headers);
   };
@@ -282,7 +283,7 @@ export default function TransactionsPage() {
   const handleFilterChange = (setter) => (e) => { setter(e.target.value); setPage(1); };
 
   /* ── Totals for current page ── */
-  const pageInflow  = transactions.reduce((s, tx) => TX_CONFIG[tx.transaction_type]?.inflow  ? s + Number(tx.amount) : s, 0);
+  const pageInflow = transactions.reduce((s, tx) => TX_CONFIG[tx.transaction_type]?.inflow ? s + Number(tx.amount) : s, 0);
   const pageOutflow = transactions.reduce((s, tx) => !TX_CONFIG[tx.transaction_type]?.inflow ? s + Number(tx.amount) : s, 0);
 
   /* ── Render ── */
@@ -311,6 +312,31 @@ export default function TransactionsPage() {
           </>
         }
       />
+
+      {/* Executive Summary Cards */}
+      {(() => {
+        const cashIn = transactions.reduce((s, tx) => (tx.payment_mode !== 'Credit / On Bill' && (tx.transaction_type === 'CUSTOMER_RECEIPT' || (tx.transaction_type === 'SALE' && tx.payment_mode !== 'Credit / On Bill'))) ? s + Number(tx.amount) : s, 0);
+        const cashOut = transactions.reduce((s, tx) => (tx.payment_mode !== 'Credit / On Bill' && (tx.transaction_type === 'FARMER_PAYMENT' || tx.transaction_type === 'EXPENSE' || (tx.transaction_type === 'PURCHASE' && tx.payment_mode !== 'Credit / On Bill'))) ? s + Number(tx.amount) : s, 0);
+        const creditBills = transactions.reduce((s, tx) => (tx.payment_mode === 'Credit / On Bill') ? s + Number(tx.amount) : s, 0);
+        const netCash = cashIn - cashOut;
+
+        return (
+          <Row className="g-3 mb-3">
+            <Col sm={6} md={3}>
+              <StatCard title="Cash Money In" value={cashIn} icon="bi-arrow-down-left-circle-fill" color="success" />
+            </Col>
+            <Col sm={6} md={3}>
+              <StatCard title="Cash Money Out" value={cashOut} icon="bi-arrow-up-right-circle-fill" color="danger" />
+            </Col>
+            <Col sm={6} md={3}>
+              <StatCard title="Net Cash Balance" value={netCash} icon="bi-wallet-fill" color={netCash >= 0 ? 'info' : 'warning'} />
+            </Col>
+            <Col sm={6} md={3}>
+              <StatCard title="Credit Bills Total" value={creditBills} icon="bi-file-earmark-text-fill" color="warning" />
+            </Col>
+          </Row>
+        );
+      })()}
 
       <DateRangePicker
         startDate={startDate}
@@ -392,11 +418,11 @@ export default function TransactionsPage() {
               </thead>
               <tbody>
                 {transactions.length > 0 ? transactions.map((tx) => {
-                  const cfg       = TX_CONFIG[tx.transaction_type] ?? { inflow: false, label: tx.transaction_type, cls: 'badge-gray' };
-                  const isCredit  = tx.payment_mode === 'Credit / On Bill';
-                  const isCashIn  = !isCredit && (tx.transaction_type === 'CUSTOMER_RECEIPT' || (tx.transaction_type === 'SALE' && tx.payment_mode !== 'Credit / On Bill'));
+                  const cfg = TX_CONFIG[tx.transaction_type] ?? { inflow: false, label: tx.transaction_type, cls: 'badge-gray' };
+                  const isCredit = tx.payment_mode === 'Credit / On Bill';
+                  const isCashIn = !isCredit && (tx.transaction_type === 'CUSTOMER_RECEIPT' || (tx.transaction_type === 'SALE' && tx.payment_mode !== 'Credit / On Bill'));
                   const isCashOut = !isCredit && (tx.transaction_type === 'FARMER_PAYMENT' || tx.transaction_type === 'EXPENSE' || (tx.transaction_type === 'PURCHASE' && tx.payment_mode !== 'Credit / On Bill'));
-                  const ptCls     = PARTY_BADGE[tx.party_type] ?? 'badge-gray';
+                  const ptCls = PARTY_BADGE[tx.party_type] ?? 'badge-gray';
 
                   return (
                     <tr key={tx.id}>
@@ -485,7 +511,7 @@ export default function TransactionsPage() {
             </span>
             <Pagination size="sm" className="mb-0" style={{ gap: '2px' }}>
               <Pagination.First disabled={page === 1} onClick={() => setPage(1)} />
-              <Pagination.Prev  disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))} />
+              <Pagination.Prev disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))} />
               {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
                 const p = Math.max(1, Math.min(page - 3, totalPages - 6)) + i;
                 return p <= totalPages ? (

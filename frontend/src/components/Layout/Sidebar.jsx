@@ -5,23 +5,23 @@ import { useAuth } from '../../context/AuthContext';
 import logoImg from '../../assets/Gangadhara_logo.png';
 
 const baseNavItems = [
-  { label: 'Dashboard',           path: '/',                icon: 'bi-grid-1x2-fill' },
-  { label: 'Farmers',             path: '/farmers',         icon: 'bi-person-lines-fill' },
-  { label: 'Farmer Payments',     path: '/farmer-payments', icon: 'bi-flower2' },
-  { label: 'Customers / Exporters', path: '/customers',    icon: 'bi-people-fill' },
-  { label: 'Sales / Receipts',    path: '/sales',           icon: 'bi-cart-check-fill' },
-  { label: 'Expenses',            path: '/expenses',        icon: 'bi-truck' },
-  { label: 'Transactions',        path: '/transactions',    icon: 'bi-journal-text' },
-  { label: 'Payment Reminders',   path: '/reminders',       icon: 'bi-bell-fill' },
-  { label: 'Profit & Loss',       path: '/profit-loss',     icon: 'bi-calculator-fill' },
-  { label: 'Reports',             path: '/reports',         icon: 'bi-file-earmark-bar-graph-fill' },
+  { label: 'Dashboard', path: '/', icon: 'bi-grid-1x2-fill' },
+  { label: 'Farmers', path: '/farmers', icon: 'bi-person-lines-fill' },
+  { label: 'Farmer Payments', path: '/farmer-payments', icon: 'bi-flower2' },
+  { label: 'Customers / Exporters', path: '/customers', icon: 'bi-people-fill' },
+  { label: 'Sales / Receipts', path: '/sales', icon: 'bi-cart-check-fill' },
+  { label: 'Expenses', path: '/expenses', icon: 'bi-truck' },
+  { label: 'Transactions', path: '/transactions', icon: 'bi-journal-text' },
+  { label: 'Payment Reminders', path: '/reminders', icon: 'bi-bell-fill' },
+  { label: 'Profit & Loss', path: '/profit-loss', icon: 'bi-calculator-fill' },
+  { label: 'Reports', path: '/reports', icon: 'bi-file-earmark-bar-graph-fill' },
 ];
 
 const settingsItems = [
-  { label: 'User Management',     path: '/users',                          icon: 'bi-person-gear' },
-  { label: 'Expense Categories',  path: '/settings/expense-categories',    icon: 'bi-tags-fill' },
-  { label: 'Payment Modes',       path: '/settings/payment-modes',         icon: 'bi-credit-card-2-front-fill' },
-  { label: 'Backup & Restore',    path: '/settings/backup',                icon: 'bi-database-fill-gear' },
+  { label: 'User Management', path: '/users', icon: 'bi-person-gear' },
+  { label: 'Expense Categories', path: '/settings/expense-categories', icon: 'bi-tags-fill' },
+  { label: 'Payment Modes', path: '/settings/payment-modes', icon: 'bi-credit-card-2-front-fill' },
+  { label: 'Backup & Restore', path: '/settings/backup', icon: 'bi-database-fill-gear' },
 ];
 
 /* ─── Inline styles ─────────────────────────────────────── */
@@ -198,8 +198,8 @@ const S = {
     background: active && !open
       ? 'linear-gradient(135deg, rgba(52,211,153,0.22) 0%, rgba(16,185,129,0.14) 100%)'
       : open
-      ? 'rgba(255,255,255,0.04)'
-      : 'transparent',
+        ? 'rgba(255,255,255,0.04)'
+        : 'transparent',
     border: active && !open ? '1px solid rgba(52,211,153,0.25)' : '1px solid transparent',
     color: active || open ? '#34d399' : 'rgba(188,208,228,0.85)',
     fontWeight: active || open ? 600 : 400,

@@ -80,8 +80,12 @@ export default function FarmerPaymentsPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    if (params.get('action') === 'add') {
+    const action = params.get('action');
+    if (action === 'add-purchase' || action === 'add') {
       handleOpenAddPurchaseModal();
+      navigate('/farmer-payments', { replace: true });
+    } else if (action === 'add-payment') {
+      handleOpenAddPaymentModal();
       navigate('/farmer-payments', { replace: true });
     }
   }, [location.search]);

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Table, Button, Form, Modal, Row, Col, Badge, Spinner, InputGroup } from 'react-bootstrap';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import expenseService from '../../services/expenseService';
 import { settingsService } from '../../services/settingsService';
@@ -19,6 +20,8 @@ const DEFAULT_EXPENSE_TYPES = [
 
 export default function ExpensesPage() {
   const { showToast } = useToast();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [expenses, setExpenses] = useState([]);
   const [totals, setTotals] = useState({ total_amount: 0, travel_total: 0, fuel_total: 0, transport_total: 0 });
@@ -102,6 +105,14 @@ export default function ExpensesPage() {
   useEffect(() => {
     fetchExpenses();
   }, [startDate, endDate, expenseTypeFilter, search]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('action') === 'add') {
+      handleOpenAdd();
+      navigate('/expenses', { replace: true });
+    }
+  }, [location.search]);
 
   const handleOpenAdd = () => {
     setSelectedExpense(null);

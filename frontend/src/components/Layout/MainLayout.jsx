@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import TopNavbar from './TopNavbar';
 import { Container } from 'react-bootstrap';
+import KeyboardShortcutsModal, { useGlobalShortcuts } from '../Common/KeyboardShortcutsModal';
 
 export default function MainLayout({ children }) {
   const [collapsed, setCollapsed] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const { showHelpModal, setShowHelpModal } = useGlobalShortcuts();
 
   const toggleCollapse = () => setCollapsed((prev) => !prev);
 
@@ -39,6 +41,7 @@ export default function MainLayout({ children }) {
           collapsed={collapsed}
           onToggleCollapse={toggleCollapse}
           onToggleMobileMenu={() => setShowMobileSidebar(true)}
+          onShowShortcuts={() => setShowHelpModal(true)}
         />
         <main className="flex-grow-1 p-3 p-md-4">
           <Container fluid className="px-0">
@@ -57,6 +60,12 @@ export default function MainLayout({ children }) {
           </div>
         </footer>
       </div>
+
+      {/* Global Keyboard Shortcuts Help Modal */}
+      <KeyboardShortcutsModal
+        show={showHelpModal}
+        onHide={() => setShowHelpModal(false)}
+      />
     </div>
   );
 }

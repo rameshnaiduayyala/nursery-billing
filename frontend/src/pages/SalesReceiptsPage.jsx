@@ -81,8 +81,12 @@ export default function SalesReceiptsPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    if (params.get('action') === 'add') {
+    const action = params.get('action');
+    if (action === 'add-sale' || action === 'add') {
       handleOpenAddSaleModal();
+      navigate('/sales', { replace: true });
+    } else if (action === 'add-payment' || action === 'add-receipt') {
+      handleOpenAddReceiptModal();
       navigate('/sales', { replace: true });
     }
   }, [location.search]);

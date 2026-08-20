@@ -6,7 +6,7 @@ import { useToast } from '../../context/ToastContext';
 import authService from '../../services/authService';
 import logoImg from '../../assets/Gangadhara_logo.png';
 
-export default function TopNavbar({ collapsed, onToggleCollapse, onToggleMobileMenu }) {
+export default function TopNavbar({ collapsed, onToggleCollapse, onToggleMobileMenu, onShowShortcuts }) {
   const { user, logout, role, isAdmin, isViewer, canCreate } = useAuth();
   const { showToast } = useToast();
 
@@ -95,15 +95,26 @@ export default function TopNavbar({ collapsed, onToggleCollapse, onToggleMobileM
         </div>
 
         {/* Right side */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Shortcuts button */}
+          <button
+            className="btn btn-sm btn-outline-secondary d-none d-md-flex align-items-center gap-1"
+            style={{ borderRadius: '20px', fontSize: '0.78rem', fontWeight: 600 }}
+            onClick={onShowShortcuts}
+            title="Keyboard Shortcuts Cheat Sheet (? or Alt + /)"
+          >
+            <i className="bi bi-keyboard" />
+            <span>Shortcuts (?)</span>
+          </button>
+
           {/* Quick Add buttons */}
           {canCreate && (
             <div className="d-none d-sm-flex align-items-center gap-2 me-1">
-              <Link to="/sales?action=add" className="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
+              <Link to="/sales?action=add-sale" className="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
                 <i className="bi bi-cart-plus-fill" />
                 <span>+ Sale</span>
               </Link>
-              <Link to="/farmer-payments?action=add" className="btn btn-sm btn-warning fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
+              <Link to="/farmer-payments?action=add-purchase" className="btn btn-sm btn-warning fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
                 <i className="bi bi-flower2" />
                 <span>+ Purchase</span>
               </Link>

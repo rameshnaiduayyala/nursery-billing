@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, Table, Button, Form, Modal, Row, Col, Badge, Spinner, InputGroup } from 'react-bootstrap';
 import { useReactToPrint } from 'react-to-print';
 import expenseService from '../../services/expenseService';
+import { settingsService } from '../../services/settingsService';
 import DateRangePicker from '../../components/Common/DateRangePicker';
 import PageHeader from '../../components/Common/PageHeader';
 import DeleteConfirmModal from '../../components/Common/DeleteConfirmModal';
@@ -11,7 +12,7 @@ import { useToast } from '../../context/ToastContext';
 import { formatCurrency, formatDate, dateToInput } from '../../utils/formatters';
 import { exportToCsv } from '../../utils/exportCsv';
 
-const EXPENSE_TYPES = [
+const DEFAULT_EXPENSE_TYPES = [
   'Travel', 'Fuel', 'Loading', 'Unloading', 'Labour',
   'Packing', 'Commission', 'Vehicle', 'Other'
 ];
@@ -23,6 +24,7 @@ export default function ExpensesPage() {
   const [totals, setTotals] = useState({ total_amount: 0, travel_total: 0, fuel_total: 0, transport_total: 0 });
   const [loading, setLoading] = useState(true);
   const [printLoading, setPrintLoading] = useState(false);
+  const [dbCategories, setDbCategories] = useState([]);
   const printRef = useRef(null);
 
   // Filters
@@ -40,14 +42,37 @@ export default function ExpensesPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Dynamic expense categories list (DB + Default Fallbacks)
+  const expenseTypesList = dbCategories.length > 0 ? dbCategories : DEFAULT_EXPENSE_TYPES;
+
   const [formData, setFormData] = useState({
     expense_date: dateToInput(),
-    expense_type: 'Travel',
+    expense_type: DEFAULT_EXPENSE_TYPES[0],
     description: '',
     amount: '',
     payment_mode: 'Cash',
     remarks: ''
   });
+
+  // Fetch expense categories from database
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await settingsService.getExpenseCategories();
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+          const names = res.data
+            .filter(c => Number(c.status) === 1 || c.status === true)
+            .map(c => c.name.trim());
+          if (names.length > 0) {
+            setDbCategories(names);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load DB expense categories, fallback to defaults', err);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const fetchExpenses = async () => {
     try {
@@ -82,7 +107,7 @@ export default function ExpensesPage() {
     setSelectedExpense(null);
     setFormData({
       expense_date: dateToInput(),
-      expense_type: 'Travel',
+      expense_type: expenseTypesList[0] || 'Travel',
       description: '',
       amount: '',
       payment_mode: 'Cash',
@@ -238,7 +263,7 @@ export default function ExpensesPage() {
                 onChange={(e) => setExpenseTypeFilter(e.target.value)}
               >
                 <option value="">All Expense Types</option>
-                {EXPENSE_TYPES.map((t) => (
+                {expenseTypesList.map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
               </Form.Select>
@@ -328,7 +353,7 @@ export default function ExpensesPage() {
                     value={formData.expense_type}
                     onChange={(e) => setFormData({ ...formData, expense_type: e.target.value })}
                   >
-                    {EXPENSE_TYPES.map((t) => (
+                    {expenseTypesList.map((t) => (
                       <option key={t} value={t}>{t}</option>
                     ))}
                   </Form.Select>

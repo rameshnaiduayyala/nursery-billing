@@ -14,7 +14,7 @@ import useDebounce from '../../hooks/useDebounce';
 /* ── Transaction type config ─────────────────────────────── */
 const TX_CONFIG = {
   SALE:             { label: 'Plant Sale',       cls: 'badge-success', inflow: true  },
-  CUSTOMER_RECEIPT: { label: 'Customer Receipt', cls: 'badge-info',    inflow: true  },
+  CUSTOMER_RECEIPT: { label: 'Customer Payment', cls: 'badge-info',    inflow: true  },
   PURCHASE:         { label: 'Plant Purchase',   cls: 'badge-warning', inflow: false },
   FARMER_PAYMENT:   { label: 'Farmer Payment',   cls: 'badge-purple',  inflow: false },
   EXPENSE:          { label: 'Expense',          cls: 'badge-danger',  inflow: false },
@@ -345,7 +345,7 @@ export default function TransactionsPage() {
           <Form.Select size="sm" style={{ flex: '1 1 160px', minWidth: '150px', height: '34px' }} value={transactionType} onChange={handleFilterChange(setTransactionType)}>
             <option value="">All Tx Types</option>
             <option value="SALE">Plant Sale</option>
-            <option value="CUSTOMER_RECEIPT">Customer Receipt</option>
+            <option value="CUSTOMER_RECEIPT">Customer Payment</option>
             <option value="PURCHASE">Plant Purchase</option>
             <option value="FARMER_PAYMENT">Farmer Payment</option>
             <option value="EXPENSE">Expense</option>
@@ -382,8 +382,9 @@ export default function TransactionsPage() {
                   <th>Party Name</th>
                   <th>Party Type</th>
                   <th>Type</th>
-                  <th style={{ textAlign: 'right', color: '#059669' }}>Money In</th>
-                  <th style={{ textAlign: 'right', color: '#dc2626' }}>Money Out</th>
+                  <th style={{ textAlign: 'right', color: '#059669' }}>Money In (Cash)</th>
+                  <th style={{ textAlign: 'right', color: '#dc2626' }}>Money Out (Cash)</th>
+                  <th style={{ textAlign: 'right', color: '#d97706' }}>Credit / Bill</th>
                   <th>Mode</th>
                   <th>Remarks</th>
                   <th style={{ textAlign: 'center' }}>Action</th>
@@ -391,9 +392,12 @@ export default function TransactionsPage() {
               </thead>
               <tbody>
                 {transactions.length > 0 ? transactions.map((tx) => {
-                  const cfg     = TX_CONFIG[tx.transaction_type] ?? { inflow: false, label: tx.transaction_type, cls: 'badge-gray' };
-                  const isInflow = cfg.inflow;
-                  const ptCls   = PARTY_BADGE[tx.party_type] ?? 'badge-gray';
+                  const cfg       = TX_CONFIG[tx.transaction_type] ?? { inflow: false, label: tx.transaction_type, cls: 'badge-gray' };
+                  const isCredit  = tx.payment_mode === 'Credit / On Bill';
+                  const isCashIn  = !isCredit && (tx.transaction_type === 'CUSTOMER_RECEIPT' || (tx.transaction_type === 'SALE' && tx.payment_mode !== 'Credit / On Bill'));
+                  const isCashOut = !isCredit && (tx.transaction_type === 'FARMER_PAYMENT' || tx.transaction_type === 'EXPENSE' || (tx.transaction_type === 'PURCHASE' && tx.payment_mode !== 'Credit / On Bill'));
+                  const ptCls     = PARTY_BADGE[tx.party_type] ?? 'badge-gray';
+
                   return (
                     <tr key={tx.id}>
                       <td style={{ color: 'var(--text-secondary)' }}>{formatDate(tx.transaction_date)}</td>
@@ -401,16 +405,26 @@ export default function TransactionsPage() {
                       <td><span className={`badge-pill ${ptCls}`}>{tx.party_type || '—'}</span></td>
                       <td><span className={`badge-pill ${cfg.cls}`}>{cfg.label}</span></td>
                       <td style={{ textAlign: 'right' }}>
-                        <span className={isInflow ? 'amount-positive' : 'amount-neutral'}>
-                          {isInflow ? formatCurrency(tx.amount) : '—'}
+                        <span className={isCashIn ? 'amount-positive' : 'amount-neutral'}>
+                          {isCashIn ? formatCurrency(tx.amount) : '—'}
                         </span>
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        <span className={!isInflow ? 'amount-negative' : 'amount-neutral'}>
-                          {!isInflow ? formatCurrency(tx.amount) : '—'}
+                        <span className={isCashOut ? 'amount-negative' : 'amount-neutral'}>
+                          {isCashOut ? formatCurrency(tx.amount) : '—'}
                         </span>
                       </td>
-                      <td><span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{tx.payment_mode || '—'}</span></td>
+                      <td style={{ textAlign: 'right' }}>
+                        {isCredit ? (
+                          <span className="badge bg-warning-subtle text-warning-emphasis border px-2 py-1">
+                            {tx.transaction_type === 'PURCHASE' ? 'Bill Owed: ' : 'Bill Due: '}
+                            {formatCurrency(tx.amount)}
+                          </span>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td><span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{tx.payment_mode || 'Credit / On Bill'}</span></td>
                       <td><span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{tx.remarks || '—'}</span></td>
                       <td style={{ textAlign: 'center' }}>
                         {canDelete && (
@@ -427,7 +441,7 @@ export default function TransactionsPage() {
                   );
                 }) : (
                   <tr>
-                    <td colSpan={9} className="table-empty">
+                    <td colSpan={10} className="table-empty">
                       <i className="bi bi-journal-text" />
                       <span className="table-empty-text">No transactions found matching the current filters.</span>
                     </td>
@@ -440,13 +454,20 @@ export default function TransactionsPage() {
                 <tfoot>
                   <tr style={{ background: '#f8fafc', fontWeight: 700 }}>
                     <td colSpan={4} style={{ padding: '10px 16px', fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                      Page {page} subtotal ({transactions.length} records)
+                      Page {page} totals ({transactions.length} records)
                     </td>
                     <td style={{ padding: '10px 16px', textAlign: 'right' }}>
-                      <span className="amount-positive">{formatCurrency(pageInflow)}</span>
+                      <span className="amount-positive">
+                        {formatCurrency(transactions.reduce((s, tx) => (tx.payment_mode !== 'Credit / On Bill' && (tx.transaction_type === 'CUSTOMER_RECEIPT' || (tx.transaction_type === 'SALE' && tx.payment_mode !== 'Credit / On Bill'))) ? s + Number(tx.amount) : s, 0))}
+                      </span>
                     </td>
                     <td style={{ padding: '10px 16px', textAlign: 'right' }}>
-                      <span className="amount-negative">{formatCurrency(pageOutflow)}</span>
+                      <span className="amount-negative">
+                        {formatCurrency(transactions.reduce((s, tx) => (tx.payment_mode !== 'Credit / On Bill' && (tx.transaction_type === 'FARMER_PAYMENT' || tx.transaction_type === 'EXPENSE' || (tx.transaction_type === 'PURCHASE' && tx.payment_mode !== 'Credit / On Bill'))) ? s + Number(tx.amount) : s, 0))}
+                      </span>
+                    </td>
+                    <td style={{ padding: '10px 16px', textAlign: 'right', color: '#d97706' }}>
+                      {formatCurrency(transactions.reduce((s, tx) => (tx.payment_mode === 'Credit / On Bill') ? s + Number(tx.amount) : s, 0))}
                     </td>
                     <td colSpan={3} />
                   </tr>

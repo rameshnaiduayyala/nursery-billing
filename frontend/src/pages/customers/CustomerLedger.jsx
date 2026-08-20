@@ -83,7 +83,8 @@ export default function CustomerLedger() {
 
   return (
     <div>
-      <div className="d-print-none">
+      {/* ── Control Header & Filters ── */}
+      <div className="d-print-none mb-3">
         <PageHeader
           title="Customer / Exporter Ledger"
           subtitle="Detailed sales & receipt statement and receivables balance"
@@ -92,23 +93,24 @@ export default function CustomerLedger() {
               <Button variant="outline-secondary" size="sm" onClick={() => navigate('/customers')}>
                 <i className="bi bi-arrow-left me-1"></i> Back to Customers
               </Button>
-              <Button variant="outline-primary" size="sm" onClick={handleExportCsv}>
+              <Button variant="outline-primary" size="sm" onClick={handleExportCsv} disabled={!statement}>
                 <i className="bi bi-download me-1"></i> Export CSV
               </Button>
-              <Button variant="success" size="sm" onClick={handlePrint}>
+              <Button variant="success" size="sm" onClick={handlePrint} disabled={!statement}>
                 <i className="bi bi-printer me-1"></i> Print Statement
               </Button>
             </>
           }
         />
 
-        <Card className="shadow-sm border-0 rounded-3 mb-3">
+        {/* Integrated Filter Bar */}
+        <Card className="shadow-sm border-0 rounded-3 mb-2">
           <Card.Body className="p-3">
             <Row className="g-2 align-items-center">
-              <Col md={4}>
+              <Col md={5}>
                 <Form.Group>
-                  <Form.Label className="small fw-semibold text-secondary mb-1">Select Customer / Exporter</Form.Label>
-                  <Form.Select value={selectedCustomerId} onChange={handleCustomerChange}>
+                  <Form.Label className="small fw-bold text-secondary mb-1">Select Customer / Exporter</Form.Label>
+                  <Form.Select value={selectedCustomerId} onChange={handleCustomerChange} size="sm" style={{ height: '36px' }}>
                     <option value="">-- Choose Customer --</option>
                     {allCustomers.map((c) => (
                       <option key={c.id} value={c.id}>{c.name} ({c.type} - {c.city || 'No City'})</option>
@@ -134,7 +136,8 @@ export default function CustomerLedger() {
         </div>
       ) : statement ? (
         <Card className="shadow-sm border-0 rounded-3 print-card">
-          <Card.Header className="bg-white p-4 border-bottom">
+          {/* Formal Letterhead Header (PRINT ONLY) */}
+          <div className="d-none d-print-block p-4 border-bottom">
             <Row className="align-items-center">
               <Col sm={8} className="d-flex align-items-center">
                 <img
@@ -157,7 +160,7 @@ export default function CustomerLedger() {
                 </div>
               </Col>
               <Col sm={4} className="text-sm-end mt-3 mt-sm-0">
-                <span className="badge bg-light text-dark border px-3 py-2 fs-6 mb-2">CUSTOMER STATEMENT</span>
+                <span className="badge bg-light text-dark border px-3 py-2 fs-6 mb-2">CUSTOMER LEDGER</span>
                 <div className="small text-muted">Statement Date: {new Date().toLocaleDateString('en-IN')}</div>
                 {(startDate || endDate) && (
                   <div className="small text-primary fw-semibold mt-1">
@@ -166,36 +169,70 @@ export default function CustomerLedger() {
                 )}
               </Col>
             </Row>
+          </div>
+
+          {/* On-Screen Compact Header */}
+          <Card.Header className="bg-white p-3 border-bottom d-print-none">
+            <Row className="align-items-center g-2">
+              <Col md={7}>
+                <div className="d-flex align-items-center">
+                  <span className="badge bg-primary-subtle text-primary p-2 rounded-circle me-2">
+                    <i className="bi bi-person-fill fs-5"></i>
+                  </span>
+                  <div>
+                    <h5 className="fw-bold text-dark mb-0">
+                      {statement.customer?.name}
+                      <span className="badge bg-light text-primary border ms-2 small">{statement.customer?.type}</span>
+                    </h5>
+                    <div className="small text-muted">
+                      <span className="me-3"><i className="bi bi-telephone me-1"></i>{statement.customer?.phone || 'N/A'}</span>
+                      <span className="me-3"><i className="bi bi-geo-alt me-1"></i>{statement.customer?.city || 'N/A'}</span>
+                      {statement.customer?.gst_number && <span>GST: {statement.customer?.gst_number}</span>}
+                    </div>
+                  </div>
+                </div>
+              </Col>
+              <Col md={5} className="text-md-end">
+                <span className="badge bg-light text-dark border me-2">Statement Date: {new Date().toLocaleDateString('en-IN')}</span>
+                {(startDate || endDate) && (
+                  <span className="badge bg-primary-subtle text-primary border">
+                    {formatDate(startDate) || 'Start'} – {formatDate(endDate) || 'Today'}
+                  </span>
+                )}
+              </Col>
+            </Row>
           </Card.Header>
 
-          <Card.Body className="p-4">
-            <Row className="g-3 mb-4 text-center">
+          <Card.Body className="p-3">
+            {/* KPI Summary Row */}
+            <Row className="g-2 mb-3 text-center">
               <Col xs={6} md={3}>
-                <div className="p-3 bg-light rounded border">
-                  <small className="text-muted d-block">Opening Balance</small>
-                  <strong className="fs-5 text-dark">{formatCurrency(statement.opening_balance)}</strong>
+                <div className="p-2 bg-light rounded border">
+                  <small className="text-muted d-block" style={{ fontSize: '0.72rem' }}>Opening Balance</small>
+                  <strong className="fs-6 text-dark">{formatCurrency(statement.opening_balance)}</strong>
                 </div>
               </Col>
               <Col xs={6} md={3}>
-                <div className="p-3 bg-success-subtle rounded border border-success">
-                  <small className="text-success-emphasis d-block">Total Sales</small>
-                  <strong className="fs-5 text-success-emphasis">{formatCurrency(statement.total_sales)}</strong>
+                <div className="p-2 bg-success-subtle rounded border border-success">
+                  <small className="text-success-emphasis d-block" style={{ fontSize: '0.72rem' }}>Total Sales</small>
+                  <strong className="fs-6 text-success-emphasis">{formatCurrency(statement.total_sales)}</strong>
                 </div>
               </Col>
               <Col xs={6} md={3}>
-                <div className="p-3 bg-primary-subtle rounded border border-primary">
-                  <small className="text-primary-emphasis d-block">Total Receipts</small>
-                  <strong className="fs-5 text-primary-emphasis">{formatCurrency(statement.total_receipts)}</strong>
+                <div className="p-2 bg-primary-subtle rounded border border-primary">
+                  <small className="text-primary-emphasis d-block" style={{ fontSize: '0.72rem' }}>Total Payments Collected</small>
+                  <strong className="fs-6 text-primary-emphasis">{formatCurrency(statement.total_receipts)}</strong>
                 </div>
               </Col>
               <Col xs={6} md={3}>
-                <div className="p-3 bg-danger-subtle rounded border border-danger">
-                  <small className="text-danger d-block">Outstanding Balance</small>
-                  <strong className="fs-4 text-danger">{formatCurrency(statement.closing_balance)}</strong>
+                <div className="p-2 bg-danger-subtle rounded border border-danger">
+                  <small className="text-danger d-block" style={{ fontSize: '0.72rem' }}>Outstanding Due</small>
+                  <strong className="fs-5 text-danger">{formatCurrency(statement.closing_balance)}</strong>
                 </div>
               </Col>
             </Row>
 
+            {/* Main Ledger Table */}
             <Table hover responsive bordered className="align-middle small mb-0">
               <thead className="table-light">
                 <tr>
@@ -203,7 +240,7 @@ export default function CustomerLedger() {
                   <th>Transaction / Details</th>
                   <th>Mode</th>
                   <th className="text-end" style={{ width: '130px' }}>Debit (Sale)</th>
-                  <th className="text-end" style={{ width: '130px' }}>Credit (Receipt)</th>
+                  <th className="text-end" style={{ width: '130px' }}>Credit (Payment)</th>
                   <th className="text-end" style={{ width: '140px' }}>Running Balance</th>
                 </tr>
               </thead>
@@ -225,11 +262,11 @@ export default function CustomerLedger() {
                         <td>{formatDate(tx.transaction_date)}</td>
                         <td>
                           <span className={`fw-semibold ${isSale ? 'text-success-emphasis' : 'text-primary-emphasis'}`}>
-                            {isSale ? 'Plant Sale' : 'Customer Receipt'}
+                            {isSale ? '🌱 Plant Sale' : '💰 Customer Payment'}
                           </span>
                           {tx.remarks && <small className="d-block text-muted">{tx.remarks}</small>}
                         </td>
-                        <td>{tx.payment_mode || 'Cash'}</td>
+                        <td>{tx.payment_mode || 'Credit / On Bill'}</td>
                         <td className="text-end fw-semibold text-success-emphasis">
                           {isSale ? formatCurrency(tx.amount) : '-'}
                         </td>

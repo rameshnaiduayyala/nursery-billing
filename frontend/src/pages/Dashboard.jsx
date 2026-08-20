@@ -169,7 +169,7 @@ export default function Dashboard() {
               { title: 'Total Sales',           value: summary?.total_sales,          icon: 'bi-cart-check-fill',  color: 'success' },
               { title: 'Farmer Purchases',       value: summary?.farmer_purchases,     icon: 'bi-flower2',          color: 'warning' },
               { title: 'Farmer Payments Made',   value: summary?.farmer_payments,      icon: 'bi-cash-coin',        color: 'info' },
-              { title: 'Customer Receipts',      value: summary?.customer_receipts,    icon: 'bi-wallet2',          color: 'primary' },
+              { title: 'Customer Payments Received', value: summary?.customer_receipts, icon: 'bi-wallet2',          color: 'primary' },
               { title: 'Total Expenses',         value: summary?.total_expenses,       icon: 'bi-truck',            color: 'danger' },
               { title: 'Net Profit',             value: summary?.net_profit,           icon: 'bi-graph-up-arrow',   color: summary?.net_profit >= 0 ? 'success' : 'danger', subtitle: 'Sales − Purchases − Expenses' },
               { title: 'Customer Outstanding',   value: summary?.customer_outstanding, icon: 'bi-people-fill',      color: 'danger',  subtitle: 'Total Sales − Receipts' },

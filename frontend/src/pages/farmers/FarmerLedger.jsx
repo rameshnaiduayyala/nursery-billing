@@ -83,7 +83,8 @@ export default function FarmerLedger() {
 
   return (
     <div>
-      <div className="d-print-none">
+      {/* ── Control Header & Filters ── */}
+      <div className="d-print-none mb-3">
         <PageHeader
           title="Farmer Ledger Statement"
           subtitle="Detailed transaction statement and running balances"
@@ -92,26 +93,27 @@ export default function FarmerLedger() {
               <Button variant="outline-secondary" size="sm" onClick={() => navigate('/farmers')}>
                 <i className="bi bi-arrow-left me-1"></i> Back to Farmers
               </Button>
-              <Button variant="outline-primary" size="sm" onClick={handleExportCsv}>
+              <Button variant="outline-primary" size="sm" onClick={handleExportCsv} disabled={!statement}>
                 <i className="bi bi-download me-1"></i> Export CSV
               </Button>
-              <Button variant="success" size="sm" onClick={handlePrint}>
+              <Button variant="success" size="sm" onClick={handlePrint} disabled={!statement}>
                 <i className="bi bi-printer me-1"></i> Print Statement
               </Button>
             </>
           }
         />
 
-        <Card className="shadow-sm border-0 rounded-3 mb-3">
+        {/* Integrated Filter Bar */}
+        <Card className="shadow-sm border-0 rounded-3 mb-2">
           <Card.Body className="p-3">
             <Row className="g-2 align-items-center">
-              <Col md={4}>
+              <Col md={5}>
                 <Form.Group>
-                  <Form.Label className="small fw-semibold text-secondary mb-1">Select Farmer</Form.Label>
-                  <Form.Select value={selectedFarmerId} onChange={handleFarmerChange}>
+                  <Form.Label className="small fw-bold text-secondary mb-1">Select Farmer</Form.Label>
+                  <Form.Select value={selectedFarmerId} onChange={handleFarmerChange} size="sm" style={{ height: '36px' }}>
                     <option value="">-- Choose Farmer --</option>
                     {allFarmers.map((f) => (
-                      <option key={f.id} value={f.id}>{f.name} ({f.location || 'No Loc'})</option>
+                      <option key={f.id} value={f.id}>{f.name} ({f.location || 'No Location'})</option>
                     ))}
                   </Form.Select>
                 </Form.Group>
@@ -134,7 +136,8 @@ export default function FarmerLedger() {
         </div>
       ) : statement ? (
         <Card className="shadow-sm border-0 rounded-3 print-card">
-          <Card.Header className="bg-white p-4 border-bottom">
+          {/* Formal Letterhead Header (PRINT ONLY) */}
+          <div className="d-none d-print-block p-4 border-bottom">
             <Row className="align-items-center">
               <Col sm={8} className="d-flex align-items-center">
                 <img
@@ -163,36 +166,66 @@ export default function FarmerLedger() {
                 )}
               </Col>
             </Row>
+          </div>
+
+          {/* On-Screen Compact Header */}
+          <Card.Header className="bg-white p-3 border-bottom d-print-none">
+            <Row className="align-items-center g-2">
+              <Col md={7}>
+                <div className="d-flex align-items-center">
+                  <span className="badge bg-success-subtle text-success p-2 rounded-circle me-2">
+                    <i className="bi bi-person-badge fs-5"></i>
+                  </span>
+                  <div>
+                    <h5 className="fw-bold text-dark mb-0">{statement.farmer?.name}</h5>
+                    <div className="small text-muted">
+                      <span className="me-3"><i className="bi bi-telephone me-1"></i>{statement.farmer?.phone || 'N/A'}</span>
+                      <span><i className="bi bi-geo-alt me-1"></i>{statement.farmer?.location || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+              </Col>
+              <Col md={5} className="text-md-end">
+                <span className="badge bg-light text-dark border me-2">Statement Date: {new Date().toLocaleDateString('en-IN')}</span>
+                {(startDate || endDate) && (
+                  <span className="badge bg-primary-subtle text-primary border">
+                    {formatDate(startDate) || 'Start'} – {formatDate(endDate) || 'Today'}
+                  </span>
+                )}
+              </Col>
+            </Row>
           </Card.Header>
 
-          <Card.Body className="p-4">
-            <Row className="g-3 mb-4 text-center">
+          <Card.Body className="p-3">
+            {/* KPI Summary Row */}
+            <Row className="g-2 mb-3 text-center">
               <Col xs={6} md={3}>
-                <div className="p-3 bg-light rounded border">
-                  <small className="text-muted d-block">Opening Balance</small>
-                  <strong className="fs-5 text-dark">{formatCurrency(statement.opening_balance)}</strong>
+                <div className="p-2 bg-light rounded border">
+                  <small className="text-muted d-block" style={{ fontSize: '0.72rem' }}>Opening Balance</small>
+                  <strong className="fs-6 text-dark">{formatCurrency(statement.opening_balance)}</strong>
                 </div>
               </Col>
               <Col xs={6} md={3}>
-                <div className="p-3 bg-warning-subtle rounded border border-warning">
-                  <small className="text-warning-emphasis d-block">Total Purchases</small>
-                  <strong className="fs-5 text-warning-emphasis">{formatCurrency(statement.total_purchases)}</strong>
+                <div className="p-2 bg-warning-subtle rounded border border-warning">
+                  <small className="text-warning-emphasis d-block" style={{ fontSize: '0.72rem' }}>Total Purchases</small>
+                  <strong className="fs-6 text-warning-emphasis">{formatCurrency(statement.total_purchases)}</strong>
                 </div>
               </Col>
               <Col xs={6} md={3}>
-                <div className="p-3 bg-info-subtle rounded border border-info">
-                  <small className="text-info-emphasis d-block">Total Payments</small>
-                  <strong className="fs-5 text-info-emphasis">{formatCurrency(statement.total_payments)}</strong>
+                <div className="p-2 bg-info-subtle rounded border border-info">
+                  <small className="text-info-emphasis d-block" style={{ fontSize: '0.72rem' }}>Total Payments</small>
+                  <strong className="fs-6 text-info-emphasis">{formatCurrency(statement.total_payments)}</strong>
                 </div>
               </Col>
               <Col xs={6} md={3}>
-                <div className="p-3 bg-danger-subtle rounded border border-danger">
-                  <small className="text-danger d-block">Closing Outstanding</small>
-                  <strong className="fs-4 text-danger">{formatCurrency(statement.closing_balance)}</strong>
+                <div className="p-2 bg-danger-subtle rounded border border-danger">
+                  <small className="text-danger d-block" style={{ fontSize: '0.72rem' }}>Closing Outstanding</small>
+                  <strong className="fs-5 text-danger">{formatCurrency(statement.closing_balance)}</strong>
                 </div>
               </Col>
             </Row>
 
+            {/* Main Ledger Table */}
             <Table hover responsive bordered className="align-middle small mb-0">
               <thead className="table-light">
                 <tr>
@@ -222,11 +255,11 @@ export default function FarmerLedger() {
                         <td>{formatDate(tx.transaction_date)}</td>
                         <td>
                           <span className={`fw-semibold ${isPurchase ? 'text-warning-emphasis' : 'text-info-emphasis'}`}>
-                            {isPurchase ? 'Plant Purchase' : 'Farmer Payment'}
+                            {isPurchase ? '📦 Plant Purchase' : '💵 Farmer Payment'}
                           </span>
                           {tx.remarks && <small className="d-block text-muted">{tx.remarks}</small>}
                         </td>
-                        <td>{tx.payment_mode || 'Cash'}</td>
+                        <td>{tx.payment_mode || 'Credit / On Bill'}</td>
                         <td className="text-end fw-semibold text-warning-emphasis">
                           {isPurchase ? formatCurrency(tx.amount) : '-'}
                         </td>
